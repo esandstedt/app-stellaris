@@ -54,9 +54,7 @@ export class Loader extends React.Component<Props, State> {
 
   render() {
     const { disabled } = this.props;
-    let { error, loading } = this.state;
-
-    error = "asdf";
+    //const { error, loading } = this.state;
 
     return (
       <>

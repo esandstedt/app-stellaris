@@ -270,8 +270,9 @@ export class SystemVoronoi {
         const edgeKey =
           current < next ? `${current},${next}` : `${next},${current}`;
 
+        const { polygonIndex } = ctx;
         const nextPolygonIndex = edgeCounts[edgeKey].polygonIndices.filter(
-          (x) => x !== ctx.polygonIndex
+          (x) => x !== polygonIndex
         )[0];
         const nextPolygon = polygons[nextPolygonIndex];
 
