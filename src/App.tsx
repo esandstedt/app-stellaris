@@ -1,25 +1,25 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import { Model } from "@esandstedt/stellaris-model";
+
+import { Loader } from "./components/Loader";
+import Svg from "./components/Svg";
+
+const WIDTH = (() => {
+  if (typeof window !== "undefined") {
+    return Math.min(1200, window.innerWidth - 20);
+  } else {
+    return 1200;
+  }
+})();
 
 function App() {
+  const [model, setModel] = useState<Model>();
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      {!model && <Loader onLoad={setModel} />}
+      {model && <Svg model={model} width={WIDTH} height={WIDTH} />}
+    </>
   );
 }
 
