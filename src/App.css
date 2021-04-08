@@ -1,0 +1,32 @@
+.app {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+  margin: 0 auto;
+  padding: 20px;
+  max-width: 1200px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.header-title {
+  margin: 0;
+}
+
+.header-extra {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 7px;
+}
+
+.header-extra > * {
+  margin-left: 5px;
+}
+
+.loader-wrapper {
+  padding-top: 10px;
+}
