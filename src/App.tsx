@@ -16,6 +16,9 @@ const WIDTH = (() => {
 
 function App() {
   const [model, setModel] = useState<Model>();
+  const [svg, setSvg] = useState<{ download: () => void }>({
+    download: () => {},
+  });
 
   return (
     <div className="app container">
@@ -24,7 +27,7 @@ function App() {
         <div className="header-extra">
           {model && (
             <>
-              <button onClick={() => alert("not implemented")}>Download</button>
+              <button onClick={() => svg.download()}>Download</button>
               <button onClick={() => setModel(undefined)}>Reset</button>
             </>
           )}
@@ -35,7 +38,9 @@ function App() {
           <Loader onLoad={setModel} />
         </div>
       )}
-      {model && <Svg model={model} width={WIDTH} height={WIDTH} />}
+      {model && (
+        <Svg model={model} width={WIDTH} height={WIDTH} setApi={setSvg} />
+      )}
     </div>
   );
 }

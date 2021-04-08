@@ -1,6 +1,6 @@
-import * as React from "react";
+import React, { createRef } from "react";
 import { Model } from "@esandstedt/stellaris-model";
-//import { saveSvgAsPng } from "save-svg-as-png";
+import { saveSvgAsPng } from "save-svg-as-png";
 
 import { IDraw } from "./render/draw";
 import { Point } from "./render/point";
@@ -77,6 +77,7 @@ interface Props {
   model: Model;
   width: number;
   height: number;
+  setApi: (api: { download: () => void }) => void;
 }
 
 interface State {
@@ -84,6 +85,8 @@ interface State {
 }
 
 export default class Svg extends React.Component<Props, State> {
+  private svgRef = createRef<SVGSVGElement>();
+
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -91,24 +94,37 @@ export default class Svg extends React.Component<Props, State> {
     };
   }
 
-  download() {
-    //saveSvgAsPng(this.refs.svg, "map.png");
-  }
-
   componentDidMount() {
     const { model, width, height } = this.props;
     const draw = new SvgDraw(width, height);
     render(model, draw);
     this.setState({ elements: draw.elements });
+    this.props.setApi({
+      download: () => this.download(),
+    });
+  }
+
+  componentWillUnmount() {
+    this.props.setApi({ download: () => {} });
+  }
+
+  download() {
+    console.log("download");
+    const element = this.svgRef.current;
+    if (element) {
+      saveSvgAsPng(element, "map.png");
+    }
   }
 
   render() {
     const { width, height } = this.props;
     const { elements } = this.state;
     return (
-      <svg ref="svg" width={width} height={height}>
-        {elements.map((element, index) => this.renderElement(element, index))}
-      </svg>
+      <div>
+        <svg ref={this.svgRef} width={width} height={height}>
+          {elements.map((element, index) => this.renderElement(element, index))}
+        </svg>
+      </div>
     );
   }
 
