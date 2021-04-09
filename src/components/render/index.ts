@@ -139,6 +139,7 @@ function render(model: Model, draw: IDraw) {
         } else {
           draw.line(begin, end, 3, "#000000", 1);
         }
+      } else if (!hyperlaneExists) {
       }
     }
   });
