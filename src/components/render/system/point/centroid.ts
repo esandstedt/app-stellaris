@@ -7,6 +7,7 @@ import { polygonCentroid, polygonHull } from "d3-polygon";
 interface CentroidSystemPointGetterOptions {
   systemPointGetter: ISystemPointGetter;
   includeHyperspacePoints: boolean;
+  connectBorderSystems: boolean;
   centroidStrategy: "system" | "hull" | "average";
 }
 
@@ -18,6 +19,7 @@ export class CentroidSystemPointGetter implements ISystemPointGetter {
     this.voronoi = new SystemVoronoi(systems, {
       systemPointGetter: options.systemPointGetter,
       includeHyperspacePoints: options.includeHyperspacePoints,
+      connectBorderSystems: options.connectBorderSystems,
     });
 
     this.points = {};

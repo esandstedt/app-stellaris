@@ -1,5 +1,6 @@
 import { System, Hyperlane } from "@esandstedt/stellaris-model";
 import { Delaunay, Voronoi } from "d3-delaunay";
+import { getSystemOwner } from "../color";
 import { Point } from "../point";
 import { ISystemPointGetter } from "./point";
 import { SimpleSystemPointGetter } from "./point/simple";
@@ -7,6 +8,7 @@ import { SimpleSystemPointGetter } from "./point/simple";
 export interface SystemVoronoiOptions {
   systemPointGetter?: ISystemPointGetter;
   includeHyperspacePoints?: boolean;
+  connectBorderSystems?: boolean;
 }
 
 export class SystemVoronoi {
@@ -34,9 +36,13 @@ export class SystemVoronoi {
 
     this.addSystemPoints(systems);
     if (this.options.includeHyperspacePoints) {
-      this.addHyperspacePoints(systems);
+      this.addHyperspacePoints(
+        systems,
+        this.options.connectBorderSystems || false
+      );
     }
     this.addBorderPoints();
+    //this.addSystemAreaPoints(systems);
     //this.addRingPoints();
 
     const delaunay = Delaunay.from(this.points.map(({ x, y }) => [x, y]));
@@ -67,18 +73,51 @@ export class SystemVoronoi {
     });
   }
 
-  private addSystemPoints(systems: System[]) {
-    systems.forEach((system) => {
+  private addPoint(point: Point, system: System | null = null) {
+    if (system) {
       const index = this.points.length;
-
       this.systemPoints[system.id].push(index);
       this.pointSystem[index] = system.id;
+    }
 
-      this.points.push(this.systemPointGetter.get(system));
+    this.points.push(point);
+  }
+
+  private addSystemPoints(systems: System[]) {
+    systems.forEach((system) => {
+      this.addPoint(this.systemPointGetter.get(system), system);
     });
   }
 
-  private addHyperspacePoints(systems: System[]) {
+  /*
+  private addSystemAreaPoints(systems: System[]) {
+    systems.forEach((system) => {
+      const point = this.systemPointGetter.get(system);
+
+      let distance = 2000;
+      systems.forEach((x) => {
+        if (x !== system) {
+          distance = Math.min(
+            point.distance(this.systemPointGetter.get(x)),
+            distance
+          );
+        }
+      });
+
+      for (let i = 0; i < 16; i++) {
+        const angle = (2 * Math.PI * i) / 16;
+        const radius = Math.min(0.33 * distance, 10);
+        const offset = new Point(Math.cos(angle), Math.sin(angle)).mult(radius);
+        this.addPoint(point.add(offset), system);
+      }
+    });
+  }
+   */
+
+  private addHyperspacePoints(
+    systems: System[],
+    connectBorderSystems: boolean
+  ) {
     const hyperlanes: Hyperlane[] = [];
     systems.forEach((system) =>
       system.hyperlanes
@@ -92,23 +131,24 @@ export class SystemVoronoi {
 
       const distance = fromPoint.distance(toPoint);
 
-      let t = Math.max(5, Math.floor(distance / 10));
+      let maxPoints = connectBorderSystems ? 2 : 0;
+      if (getSystemOwner(from) === getSystemOwner(to)) {
+        maxPoints = 8;
+      }
+
+      let t = Math.max(maxPoints + 1, Math.floor(distance / 30));
       if (t % 2 === 0) {
         t += 1;
       }
 
       for (let i = 1; i < t; i++) {
         const system = i * 2 < t ? to : from;
-        const index = this.points.length;
-
-        this.systemPoints[system.id].push(index);
-        this.pointSystem[index] = system.id;
-
-        this.points.push(
+        this.addPoint(
           new Point(
             (i * fromPoint.x) / t + ((t - i) * toPoint.x) / t,
             (i * fromPoint.y) / t + ((t - i) * toPoint.y) / t
-          )
+          ),
+          system
         );
       }
     });
@@ -116,7 +156,7 @@ export class SystemVoronoi {
 
   private addBorderPoints() {
     const lowerBound = 30;
-    const upperBound = 50;
+    const upperBound = 60;
 
     const points: Point[] = [];
 
@@ -125,8 +165,8 @@ export class SystemVoronoi {
         .filter((x) => x !== point)
         .filter((x) => point.distance(x) < lowerBound + upperBound);
 
-      for (let i = 0; i < 36; i++) {
-        const angle = (2 * Math.PI * i) / 36;
+      for (let i = 0; i < 32; i++) {
+        const angle = (2 * Math.PI * i) / 32;
 
         const validPoint = this.getValidBorderPoint(
           point,
@@ -141,7 +181,7 @@ export class SystemVoronoi {
       }
     });
 
-    points.forEach((x) => this.points.push(x));
+    points.forEach((x) => this.addPoint(x));
   }
 
   private getValidBorderPoint(

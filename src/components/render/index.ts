@@ -51,6 +51,7 @@ function render(model: Model, draw: IDraw) {
   const voronoi = new SystemVoronoi(systems, {
     systemPointGetter,
     includeHyperspacePoints: true,
+    connectBorderSystems: false,
   });
 
   const getDrawPoint = (() => {
