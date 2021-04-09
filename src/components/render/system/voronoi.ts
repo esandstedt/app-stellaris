@@ -115,19 +115,26 @@ export class SystemVoronoi {
   }
 
   private addBorderPoints() {
-    const limit = 30;
+    const lowerBound = 30;
+    const upperBound = 50;
 
     const points: Point[] = [];
 
     this.points.forEach((point) => {
       const neighbors = this.points
         .filter((x) => x !== point)
-        .filter((x) => point.distance(x) < 2.5 * limit);
+        .filter((x) => point.distance(x) < lowerBound + upperBound);
 
-      for (let i = 0; i < 32; i++) {
-        const angle = (2 * Math.PI * i) / 32;
+      for (let i = 0; i < 36; i++) {
+        const angle = (2 * Math.PI * i) / 36;
 
-        const validPoint = this.getValidBorderPoint(point, neighbors, angle);
+        const validPoint = this.getValidBorderPoint(
+          point,
+          neighbors,
+          angle,
+          lowerBound,
+          upperBound
+        );
         if (validPoint) {
           points.push(validPoint);
         }
@@ -137,16 +144,25 @@ export class SystemVoronoi {
     points.forEach((x) => this.points.push(x));
   }
 
-  private getValidBorderPoint(point: Point, neighbors: Point[], angle: number) {
-    const limit = 30;
-
+  private getValidBorderPoint(
+    point: Point,
+    neighbors: Point[],
+    angle: number,
+    lowerBound: number,
+    upperBound: number
+  ) {
     const offset = new Point(Math.cos(angle), Math.sin(angle));
-    for (var i = 30; i < 32; i++) {
+    const points = [];
+    for (var i = lowerBound; i < upperBound; i++) {
       const current = point.add(offset.mult(i));
-      const valid = neighbors.every((x) => current.distance(x) > limit);
+      const valid = neighbors.every((x) => current.distance(x) > lowerBound);
       if (valid) {
-        return current;
+        points.push(current);
       }
+    }
+
+    if (points.length) {
+      return points.reduce((a, b) => a.add(b)).mult(1 / points.length);
     }
   }
 

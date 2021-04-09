@@ -7,7 +7,7 @@ import { polygonCentroid, polygonHull } from "d3-polygon";
 interface CentroidSystemPointGetterOptions {
   systemPointGetter: ISystemPointGetter;
   includeHyperspacePoints: boolean;
-  centroidStrategy: "system" | "hull";
+  centroidStrategy: "system" | "hull" | "average";
 }
 
 export class CentroidSystemPointGetter implements ISystemPointGetter {
@@ -17,24 +17,24 @@ export class CentroidSystemPointGetter implements ISystemPointGetter {
   constructor(systems: System[], options: CentroidSystemPointGetterOptions) {
     this.voronoi = new SystemVoronoi(systems, {
       systemPointGetter: options.systemPointGetter,
-      includeHyperspacePoints: options.includeHyperspacePoints
+      includeHyperspacePoints: options.includeHyperspacePoints,
     });
 
     this.points = {};
-    systems.forEach(system => {
+    systems.forEach((system) => {
       const polygons = this.voronoi.getPolygons(system);
 
       let centroid: [number, number] = [0, 0];
 
       if (options.centroidStrategy === "system") {
         centroid = polygonCentroid(
-          polygons[0].map(p => [p.x, p.y] as [number, number])
+          polygons[0].map((p) => [p.x, p.y] as [number, number])
         );
       } else if (options.centroidStrategy === "hull") {
         const hull = polygonHull(
           polygons
             .reduce((a, b) => a.concat(b), [])
-            .map(point => [point.x, point.y] as [number, number])
+            .map((point) => [point.x, point.y] as [number, number])
         );
 
         if (hull == null) {
@@ -42,6 +42,14 @@ export class CentroidSystemPointGetter implements ISystemPointGetter {
         }
 
         centroid = polygonCentroid(hull);
+      } else if ("average") {
+        const centroids = polygons.map((polygon) =>
+          polygonCentroid(polygon.map((p) => [p.x, p.y] as [number, number]))
+        );
+
+        const sum = centroids.reduce((a, b) => [a[0] + b[0], a[1] + b[1]]);
+        const length = centroids.length;
+        centroid = [sum[0] / length, sum[1] / length];
       } else {
         throw new Error();
       }

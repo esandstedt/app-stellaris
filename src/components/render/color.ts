@@ -31,9 +31,7 @@ export class Color {
     const list = [this.r, this.g, this.b];
     for (let i = 0; i < 3; i++) {
       const n = Math.max(0, Math.min(list[i], 255));
-      result += Math.round(n)
-        .toString(16)
-        .padStart(2, "0");
+      result += Math.round(n).toString(16).padStart(2, "0");
     }
 
     return result;
@@ -58,7 +56,8 @@ const getCountryColorOffset = (country: Country): Color => {
   return countryOffsets[id];
 };
 
-const BLACK = new Color(0, 0, 0);
+export const BLACK = new Color(0, 0, 0);
+export const WHITE = new Color(255, 255, 255);
 
 const COLORS: { [key: string]: Color } = {
   blue: new Color(0, 0, 256),
@@ -85,7 +84,7 @@ const COLORS: { [key: string]: Color } = {
   teal: new Color(0, 192, 192),
   turquoise: new Color(64, 224, 208),
   yellow: new Color(256, 256, 0),
-  white: new Color(0, 0, 0)
+  white: new Color(0, 0, 0),
 };
 
 const getColor = (color: string): Color => {
@@ -127,7 +126,7 @@ const getCountryColor = (country: Country): Color => {
   return result;
 };
 
-function getSystemController(system: System): Country | undefined {
+export function getSystemController(system: System): Country | undefined {
   return system.planets[0].controller;
 }
 
@@ -146,16 +145,19 @@ export const getSystemColor = (
   const owner = getSystemOwner(system);
   const controller = getSystemController(system);
 
+  let result;
   if (typeof owner !== "undefined" && typeof controller !== "undefined") {
     const o = getCountryColor(owner);
     const c = getCountryColor(controller);
 
-    return o.blend(c, 0.75);
+    result = o.blend(c, 0.85);
   } else if (typeof owner !== "undefined") {
-    return getCountryColor(owner);
+    result = getCountryColor(owner);
   } else if (typeof controller !== "undefined") {
-    return getCountryColor(controller);
+    result = getCountryColor(controller);
   } else {
-    return defaultColor;
+    result = defaultColor;
   }
+
+  return result.blend(WHITE, 0.33);
 };

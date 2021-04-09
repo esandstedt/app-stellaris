@@ -79,7 +79,7 @@ function render(model: Model, draw: IDraw) {
 
   // Draw systems
   systems.forEach((system) => {
-    const color = getSystemColor(system, new Color(34, 34, 34));
+    const color = getSystemColor(system, new Color(223, 223, 223));
     //color = new Color(240, 100, 0);
 
     // Normalise luminance and overlay pop counts
@@ -96,13 +96,16 @@ function render(model: Model, draw: IDraw) {
     });
   });
 
+  // Draw system borders
+  /*
   systems.forEach((system) => {
     voronoi.getPolygons(system).forEach((polygon) => {
-      draw.polyline(polygon.map(getDrawPoint), 1, "#000000", 0.2);
+      draw.polyline(polygon.map(getDrawPoint), 1, "#ffffff", 0.2);
     });
   });
+   */
 
-  // Draw borders
+  // Draw country borders
   voronoi.getPolygons().forEach((polygon) => {
     for (let i = 0; i < polygon.length - 1; i++) {
       const begin = getDrawPoint(polygon[i]);
@@ -137,38 +140,39 @@ function render(model: Model, draw: IDraw) {
         hyperlaneExists = set.has(snd);
       }
 
-      if (!hyperlaneExists) {
-        draw.line(begin, end, 3, "#000000", 1);
-      }
-
-      const owners = new Set<Country>(
-        systems
-          .filter((x) => x !== null)
-          .map((x) => x as System)
-          .map(getSystemOwner)
-          .filter((x) => typeof x !== "undefined")
-          .map((x) => x as Country)
+      const owners = new Set<Country | undefined | null>(
+        systems.map((x) => (x !== null ? getSystemOwner(x) : null))
       );
 
       if (owners.size > 1) {
-        draw.line(begin, end, 1, "#000000", 1);
+        if (Array.from(owners).every((x) => !x)) {
+          // Don't render a border.
+        } else {
+          draw.line(begin, end, 1.5, "#000000", 1);
+        }
+      } else if (!hyperlaneExists) {
+        // draw.line(begin, end, 1, "#000000", 1);
       }
     }
   });
 
   // Draw hyperlanes
-  /*
-  systems.forEach(system => {
+  systems.forEach((system) => {
     const start = getDrawPoint(systemPointGetter.get(system));
 
     system.hyperlanes
       .filter(({ to }) => system.id < to.id)
       .forEach(({ to }) => {
         const end = getDrawPoint(systemPointGetter.get(to));
-        draw.line(start, end, 1, "#ffffff", 0.25);
+        draw.line(start, end, 1, "#000000", 0.5);
       });
   });
-   */
+
+  // Draw systems
+  systems.forEach((system) => {
+    const point = getDrawPoint(systemPointGetter.get(system));
+    draw.rect(point.add(new Point(-0.5, -0.5)), 1, 1, "#000");
+  });
 
   // Draw starbases
   /*
@@ -210,7 +214,7 @@ function render(model: Model, draw: IDraw) {
   voronoi
     .getPoints()
     .map(getDrawPoint)
-    .forEach(point => draw.rect(point, 1, 1, "#f00"));
+    .forEach((point) => draw.rect(point, 1, 1, "#f00"));
    */
 }
 

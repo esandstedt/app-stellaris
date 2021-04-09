@@ -14,7 +14,7 @@ export class LayeredCentroidSystemPointGetter implements ISystemPointGetter {
       this.getter = new CentroidSystemPointGetter(systems, {
         systemPointGetter: this.getter,
         includeHyperspacePoints: true,
-        centroidStrategy: i === iterations - 1 ? "hull" : "system",
+        centroidStrategy: "average",
       });
     }
   }
