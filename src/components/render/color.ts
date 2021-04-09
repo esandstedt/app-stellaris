@@ -145,19 +145,15 @@ export const getSystemColor = (
   const owner = getSystemOwner(system);
   const controller = getSystemController(system);
 
-  let result;
   if (typeof owner !== "undefined" && typeof controller !== "undefined") {
     const o = getCountryColor(owner);
     const c = getCountryColor(controller);
-
-    result = o.blend(c, 0.85);
+    return o.blend(c, 0.85);
   } else if (typeof owner !== "undefined") {
-    result = getCountryColor(owner);
+    return getCountryColor(owner);
   } else if (typeof controller !== "undefined") {
-    result = getCountryColor(controller);
+    return getCountryColor(controller);
   } else {
-    result = defaultColor;
+    return defaultColor;
   }
-
-  return result.blend(WHITE, 0.33);
 };

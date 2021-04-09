@@ -14,6 +14,13 @@ export interface IDraw {
   polygon(points: Point[], color: string): void;
   polyline(points: Point[], width: number, color: string, alpha: number): void;
   rect(topLeft: Point, w: number, h: number, color: string): void;
+  circle(
+    center: Point,
+    r: number,
+    fillColor: string,
+    strokeColor: string,
+    strokeWidth: number
+  ): void;
 }
 
 /*

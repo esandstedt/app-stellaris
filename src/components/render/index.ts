@@ -2,7 +2,7 @@ import { System, Model, Country } from "@esandstedt/stellaris-model";
 
 import { SystemVoronoi } from "./system/voronoi";
 import { Point } from "./point";
-import { getSystemColor, Color, getSystemOwner } from "./color";
+import { getSystemColor, Color, getSystemOwner, WHITE } from "./color";
 import { IDraw } from "./draw";
 import { LayeredCentroidSystemPointGetter } from "./system/point/layered-centroid";
 
@@ -80,7 +80,11 @@ function render(model: Model, draw: IDraw) {
 
   // Draw systems
   systems.forEach((system) => {
-    const color = getSystemColor(system, new Color(223, 223, 223));
+    const color = getSystemColor(system, new Color(223, 223, 223)).blend(
+      WHITE,
+      0.33
+    );
+
     //color = new Color(240, 100, 0);
 
     // Normalise luminance and overlay pop counts
@@ -159,8 +163,18 @@ function render(model: Model, draw: IDraw) {
 
   // Draw systems
   systems.forEach((system) => {
+    const popCount = system.planets
+      .map((x) => x.pops.length)
+      .reduce((a, b) => a + b);
+
     const point = getDrawPoint(systemPointGetter.get(system));
-    draw.rect(point.add(new Point(-1.5, -1.5)), 3, 3, "#000");
+
+    if (0 < popCount) {
+      const radius = Math.max(1, 2 * Math.sqrt(popCount / Math.PI));
+      draw.circle(point, radius, getSystemColor(system).toString(), "#000", 1);
+    } else {
+      draw.circle(point, 1, "#000", "#000", 1);
+    }
   });
 
   // Draw starbases

@@ -71,6 +71,26 @@ class SvgDraw implements IDraw {
 
     this.polygon(points, color);
   }
+
+  circle(
+    center: Point,
+    r: number,
+    fill: string,
+    stroke: string,
+    strokeWidth: number
+  ) {
+    this.elements.push({
+      type: "circle",
+      props: {
+        cx: center.x,
+        cy: center.y,
+        r,
+        fill,
+        stroke,
+        strokeWidth,
+      },
+    });
+  }
 }
 
 interface Props {
