@@ -170,7 +170,7 @@ function render(model: Model, draw: IDraw) {
     const point = getDrawPoint(systemPointGetter.get(system));
 
     if (0 < popCount) {
-      const radius = Math.max(1, 2 * Math.sqrt(popCount / Math.PI));
+      const radius = Math.max(1, 1.5 * Math.sqrt(popCount / Math.PI));
       draw.circle(point, radius, getSystemColor(system).toString(), "#000", 1);
     } else {
       draw.circle(point, 1, "#000", "#000", 1);
