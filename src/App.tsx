@@ -6,14 +6,6 @@ import Svg from "./components/Svg";
 
 import "./App.css";
 
-const WIDTH = (() => {
-  if (typeof window !== "undefined") {
-    return Math.min(1200, window.innerWidth - 20);
-  } else {
-    return 1200;
-  }
-})();
-
 function App() {
   const [model, setModel] = useState<Model>();
   const [svg, setSvg] = useState<{ download: () => void }>({
@@ -38,9 +30,7 @@ function App() {
           <Loader onLoad={setModel} />
         </div>
       )}
-      {model && (
-        <Svg model={model} width={WIDTH} height={WIDTH} setApi={setSvg} />
-      )}
+      {model && <Svg model={model} setApi={setSvg} />}
     </div>
   );
 }

@@ -122,22 +122,7 @@ function render(model: Model, draw: IDraw) {
         // No hyperlane.
       } else {
         const [fst, snd] = systems as [System, System];
-
-        const set = new Set(
-          fst.hyperlanes
-            .map((x) => x.to)
-            .concat(
-              []
-              /*
-              fst.hyperlanes
-                .map(x => x.to.hyperlanes)
-                .reduce((a, b) => a.concat(b), [])
-                .map(x => x.to)
-               */
-            )
-        );
-
-        hyperlaneExists = set.has(snd);
+        hyperlaneExists = fst.hyperlanes.some((x) => x.to === snd);
       }
 
       const owners = new Set<Country | undefined | null>(
@@ -147,11 +132,13 @@ function render(model: Model, draw: IDraw) {
       if (owners.size > 1) {
         if (Array.from(owners).every((x) => !x)) {
           // Don't render a border.
+          /*
+        } else if (hyperlaneExists) {
+          draw.line(begin, end, 1, "#000000", 1);
+         */
         } else {
-          draw.line(begin, end, 1.5, "#000000", 1);
+          draw.line(begin, end, 3, "#000000", 1);
         }
-      } else if (!hyperlaneExists) {
-        // draw.line(begin, end, 1, "#000000", 1);
       }
     }
   });
@@ -171,7 +158,7 @@ function render(model: Model, draw: IDraw) {
   // Draw systems
   systems.forEach((system) => {
     const point = getDrawPoint(systemPointGetter.get(system));
-    draw.rect(point.add(new Point(-0.5, -0.5)), 1, 1, "#000");
+    draw.rect(point.add(new Point(-1.5, -1.5)), 3, 3, "#000");
   });
 
   // Draw starbases

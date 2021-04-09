@@ -75,8 +75,6 @@ class SvgDraw implements IDraw {
 
 interface Props {
   model: Model;
-  width: number;
-  height: number;
   setApi: (api: { download: () => void }) => void;
 }
 
@@ -95,8 +93,8 @@ export default class Svg extends React.Component<Props, State> {
   }
 
   componentDidMount() {
-    const { model, width, height } = this.props;
-    const draw = new SvgDraw(width, height);
+    const { model } = this.props;
+    const draw = new SvgDraw(2000, 2000);
     render(model, draw);
     this.setState({ elements: draw.elements });
     this.props.setApi({
@@ -109,7 +107,6 @@ export default class Svg extends React.Component<Props, State> {
   }
 
   download() {
-    console.log("download");
     const element = this.svgRef.current;
     if (element) {
       saveSvgAsPng(element, "map.png");
@@ -117,11 +114,10 @@ export default class Svg extends React.Component<Props, State> {
   }
 
   render() {
-    const { width, height } = this.props;
     const { elements } = this.state;
     return (
       <div>
-        <svg ref={this.svgRef} width={width} height={height}>
+        <svg ref={this.svgRef} viewBox="0 0 2000 2000">
           {elements.map((element, index) => this.renderElement(element, index))}
         </svg>
       </div>
