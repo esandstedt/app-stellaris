@@ -1162,9 +1162,9 @@
   integrity sha512-ij4wRiunFfaJxjB0BdrYHIH8FxBJpOwNPhhAcunlmPdXudL1WQV1qoP9un6JsEBAgQH+7UXyyjh0g7jTxXK6tg==
 
 "@esandstedt/stellaris-model@^0.4.5":
-  version "0.4.6"
-  resolved "https://registry.yarnpkg.com/@esandstedt/stellaris-model/-/stellaris-model-0.4.6.tgz#9eee66444e32e12c1565ffafa03e83a6ecbb66b0"
-  integrity sha512-oy6U7LwzSlCk8msDmwQTRKFXPCAeQBFayvkv8ifYGAGtSUCERg1IRBAp5HnpEp7HNsgUFSTFNgyz9I1DZXCaTg==
+  version "0.4.7"
+  resolved "https://registry.yarnpkg.com/@esandstedt/stellaris-model/-/stellaris-model-0.4.7.tgz#e0613293ad65c967b4a61672810b0f4760347710"
+  integrity sha512-3J9jBgb3Onj/C4iKSQcY+cCQbGNp02mGRE7PTrW1PZLQq23vPjv7Yp3fHLxZlmCOmF78n3XwlEfkrw7U8DcsuA==
   dependencies:
     jszip "^3.2.2"
 
