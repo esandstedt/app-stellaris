@@ -13,8 +13,8 @@ function App() {
   });
 
   return (
-    <div className="app container">
-      <div className="header">
+    <div className="app">
+      <div className="header container">
         <h1 className="header-title">Stellaris Map</h1>
         <div className="header-extra">
           {model && (
@@ -26,7 +26,7 @@ function App() {
         </div>
       </div>
       {!model && (
-        <div className="loader-wrapper">
+        <div className="loader container">
           <Loader onLoad={setModel} />
         </div>
       )}

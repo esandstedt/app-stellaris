@@ -1,26 +1,21 @@
 import { ISystemPointGetter } from ".";
-import { SystemVoronoi } from "../voronoi";
+import { SystemVoronoi, SystemVoronoiOptions } from "../voronoi";
 import { Point } from "../../point";
 import { System } from "@esandstedt/stellaris-model";
 import { polygonCentroid, polygonHull } from "d3-polygon";
 
-interface CentroidSystemPointGetterOptions {
-  systemPointGetter: ISystemPointGetter;
-  includeHyperspacePoints: boolean;
-  connectBorderSystems: boolean;
-  centroidStrategy: "system" | "hull" | "average";
-}
+type CentroidStrategy = "system" | "hull" | "average";
 
 export class CentroidSystemPointGetter implements ISystemPointGetter {
   private voronoi: SystemVoronoi;
   private points: { [key: string]: Point };
 
-  constructor(systems: System[], options: CentroidSystemPointGetterOptions) {
-    this.voronoi = new SystemVoronoi(systems, {
-      systemPointGetter: options.systemPointGetter,
-      includeHyperspacePoints: options.includeHyperspacePoints,
-      connectBorderSystems: options.connectBorderSystems,
-    });
+  constructor(
+    systems: System[],
+    strategy: CentroidStrategy,
+    options: SystemVoronoiOptions
+  ) {
+    this.voronoi = new SystemVoronoi(systems, options);
 
     this.points = {};
     systems.forEach((system) => {
@@ -28,11 +23,11 @@ export class CentroidSystemPointGetter implements ISystemPointGetter {
 
       let centroid: [number, number] = [0, 0];
 
-      if (options.centroidStrategy === "system") {
+      if (strategy === "system") {
         centroid = polygonCentroid(
           polygons[0].map((p) => [p.x, p.y] as [number, number])
         );
-      } else if (options.centroidStrategy === "hull") {
+      } else if (strategy === "hull") {
         const hull = polygonHull(
           polygons
             .reduce((a, b) => a.concat(b), [])

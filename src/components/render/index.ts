@@ -2,56 +2,53 @@ import { System, Model, Country } from "@esandstedt/stellaris-model";
 
 import { SystemVoronoi } from "./system/voronoi";
 import { Point } from "./point";
-import { getSystemColor, Color, getSystemOwner, WHITE } from "./color";
+import { getSystemColor, getSystemOwner, WHITE } from "./color";
 import { IDraw } from "./draw";
-import { LayeredCentroidSystemPointGetter } from "./system/point/layered-centroid";
-
-/*
-function luminance(color: Color) {
-  const [r, g, b] = [color.r, color.g, color.b]
-    .map(x => x / 255)
-    .map(x => {
-      if (0.03928 < x) {
-        return Math.pow((x + 0.055) / 1.055, 2.4);
-      } else {
-        return x / 12.92;
-      }
-    });
-
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function setLuminance(color: Color, target: number) {
-  let acc = 1.0;
-  let step = 1.0;
-
-  for (let i = 0; i < 6; i++) {
-    const c = color.mult(acc);
-    const current = luminance(c);
-
-    if (current < target) {
-      acc += step;
-    } else {
-      acc -= step;
-    }
-
-    step *= 0.5;
-  }
-
-  return color.mult(acc);
-}
- */
-
-// const origin = new Point(0, 0);
+import { SimpleSystemPointGetter } from "./system/point/simple";
+import { CentroidSystemPointGetter } from "./system/point/centroid";
 
 function render(model: Model, draw: IDraw) {
   const systems = model.systems.getAll();
 
-  const systemPointGetter = new LayeredCentroidSystemPointGetter(systems, 2);
+  const systemPointGetter = (() => {
+    const fst = new CentroidSystemPointGetter(systems, "hull", {
+      systemPointGetter: new SimpleSystemPointGetter(),
+      hyperspace: {
+        connectBorderSystems: true,
+        spacing: 10,
+      },
+      border: {
+        lowerBound: 40,
+        upperBound: 50,
+      },
+    });
+
+    return new CentroidSystemPointGetter(systems, "average", {
+      systemPointGetter: fst,
+      hyperspace: {
+        connectBorderSystems: true,
+        spacing: 5,
+      },
+      systemArea: {
+        maxRadius: 5,
+      },
+      border: {
+        lowerBound: 30,
+        upperBound: 40,
+      },
+    });
+  })();
+
   const voronoi = new SystemVoronoi(systems, {
     systemPointGetter,
-    includeHyperspacePoints: true,
-    connectBorderSystems: false,
+    hyperspace: {
+      connectBorderSystems: false,
+      spacing: 3,
+    },
+    border: {
+      lowerBound: 30,
+      upperBound: 50,
+    },
   });
 
   const getDrawPoint = (() => {
@@ -80,32 +77,22 @@ function render(model: Model, draw: IDraw) {
 
   // Draw systems
   systems.forEach((system) => {
-    const color = getSystemColor(system, new Color(223, 223, 223)).blend(
-      WHITE,
-      0.33
-    );
-
-    //color = new Color(240, 100, 0);
-
-    // Normalise luminance and overlay pop counts
-    /*
-    const pops = system.planets
-      .map(x => x.pops)
-      .reduce((a, b) => a.concat(b), []);
-    const ratio = Math.max(0, Math.min(pops.length / 300.0, 1));
-    color = setLuminance(color, 0.05).add(300 * ratio);
-     */
-
-    voronoi.getPolygons(system).forEach((polygon) => {
-      draw.polygon(polygon.map(getDrawPoint), color.toString());
-    });
+    const color = getSystemColor(system, WHITE);
+    if (color !== WHITE) {
+      voronoi.getPolygons(system).forEach((polygon) => {
+        draw.polygon(
+          polygon.map(getDrawPoint),
+          color.blend(WHITE, 0.33).toString()
+        );
+      });
+    }
   });
 
-  // Draw system borders
+  // Draw polygon borders
   /*
   systems.forEach((system) => {
     voronoi.getPolygons(system).forEach((polygon) => {
-      draw.polyline(polygon.map(getDrawPoint), 1, "#ffffff", 0.2);
+      draw.polyline(polygon.map(getDrawPoint), 1, "#ffffff", 0.1);
     });
   });
    */

@@ -7,8 +7,17 @@ import { SimpleSystemPointGetter } from "./point/simple";
 
 export interface SystemVoronoiOptions {
   systemPointGetter?: ISystemPointGetter;
-  includeHyperspacePoints?: boolean;
-  connectBorderSystems?: boolean;
+  hyperspace?: {
+    connectBorderSystems: boolean;
+    spacing: number;
+  };
+  systemArea?: {
+    maxRadius: number;
+  };
+  border?: {
+    lowerBound: number;
+    upperBound: number;
+  };
 }
 
 export class SystemVoronoi {
@@ -35,14 +44,25 @@ export class SystemVoronoi {
     systems.forEach(({ id }) => (this.systemPoints[id] = []));
 
     this.addSystemPoints(systems);
-    if (this.options.includeHyperspacePoints) {
+
+    if (this.options.hyperspace) {
       this.addHyperspacePoints(
         systems,
-        this.options.connectBorderSystems || false
+        this.options.hyperspace.connectBorderSystems,
+        this.options.hyperspace.spacing
       );
     }
-    this.addBorderPoints();
-    //this.addSystemAreaPoints(systems);
+
+    if (this.options.systemArea) {
+      this.addSystemAreaPoints(systems, this.options.systemArea.maxRadius);
+    }
+
+    if (this.options.border) {
+      this.addBorderPoints(
+        this.options.border.lowerBound,
+        this.options.border.upperBound
+      );
+    }
     //this.addRingPoints();
 
     const delaunay = Delaunay.from(this.points.map(({ x, y }) => [x, y]));
@@ -89,8 +109,7 @@ export class SystemVoronoi {
     });
   }
 
-  /*
-  private addSystemAreaPoints(systems: System[]) {
+  private addSystemAreaPoints(systems: System[], maxRadius: number) {
     systems.forEach((system) => {
       const point = this.systemPointGetter.get(system);
 
@@ -106,17 +125,17 @@ export class SystemVoronoi {
 
       for (let i = 0; i < 16; i++) {
         const angle = (2 * Math.PI * i) / 16;
-        const radius = Math.min(0.33 * distance, 10);
+        const radius = Math.min(0.45 * distance, maxRadius);
         const offset = new Point(Math.cos(angle), Math.sin(angle)).mult(radius);
         this.addPoint(point.add(offset), system);
       }
     });
   }
-   */
 
   private addHyperspacePoints(
     systems: System[],
-    connectBorderSystems: boolean
+    connectBorderSystems: boolean,
+    spacing: number
   ) {
     const hyperlanes: Hyperlane[] = [];
     systems.forEach((system) =>
@@ -131,12 +150,14 @@ export class SystemVoronoi {
 
       const distance = fromPoint.distance(toPoint);
 
-      let maxPoints = connectBorderSystems ? 2 : 0;
+      let maxPoints = 0;
       if (getSystemOwner(from) === getSystemOwner(to)) {
-        maxPoints = 8;
+        maxPoints = 1000;
+      } else {
+        maxPoints = connectBorderSystems ? 1000 : 0;
       }
 
-      let t = Math.max(maxPoints + 1, Math.floor(distance / 30));
+      let t = Math.min(maxPoints + 1, Math.floor(distance / spacing));
       if (t % 2 === 0) {
         t += 1;
       }
@@ -154,10 +175,7 @@ export class SystemVoronoi {
     });
   }
 
-  private addBorderPoints() {
-    const lowerBound = 30;
-    const upperBound = 60;
-
+  private addBorderPoints(lowerBound: number, upperBound: number) {
     const points: Point[] = [];
 
     this.points.forEach((point) => {
