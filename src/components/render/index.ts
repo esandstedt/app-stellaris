@@ -15,7 +15,7 @@ function render(model: Model, draw: IDraw) {
       systemPointGetter: new SimpleSystemPointGetter(),
       hyperspace: {
         connectBorderSystems: true,
-        spacing: 10,
+        spacing: 12,
       },
       border: {
         lowerBound: 40,
@@ -23,18 +23,42 @@ function render(model: Model, draw: IDraw) {
       },
     });
 
-    return new CentroidSystemPointGetter(systems, "average", {
+    const snd = new CentroidSystemPointGetter(systems, "hull", {
       systemPointGetter: fst,
       hyperspace: {
         connectBorderSystems: true,
-        spacing: 5,
+        spacing: 10,
+      },
+      border: {
+        lowerBound: 35,
+        upperBound: 45,
+      },
+    });
+
+    const thr = new CentroidSystemPointGetter(systems, "hull", {
+      systemPointGetter: snd,
+      hyperspace: {
+        connectBorderSystems: true,
+        spacing: 8,
+      },
+      border: {
+        lowerBound: 30,
+        upperBound: 40,
+      },
+    });
+
+    return new CentroidSystemPointGetter(systems, "average", {
+      systemPointGetter: thr,
+      hyperspace: {
+        connectBorderSystems: true,
+        spacing: 6,
       },
       systemArea: {
         maxRadius: 5,
       },
       border: {
-        lowerBound: 30,
-        upperBound: 40,
+        lowerBound: 25,
+        upperBound: 35,
       },
     });
   })();
