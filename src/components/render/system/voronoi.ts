@@ -7,7 +7,7 @@ import { SimpleSystemPointGetter } from "./point/simple";
 
 export interface SystemVoronoiOptions {
   systemPointGetter?: ISystemPointGetter;
-  hyperspace?: {
+  hyperlane?: {
     connectBorderSystems: boolean;
     spacing: number;
   };
@@ -48,11 +48,11 @@ export class SystemVoronoi {
 
     this.addSystemPoints(systems);
 
-    if (this.options.hyperspace) {
-      this.addHyperspacePoints(
+    if (this.options.hyperlane) {
+      this.addHyperlanePoints(
         systems,
-        this.options.hyperspace.connectBorderSystems,
-        this.options.hyperspace.spacing
+        this.options.hyperlane.connectBorderSystems,
+        this.options.hyperlane.spacing
       );
     }
 
@@ -67,14 +67,6 @@ export class SystemVoronoi {
       );
     }
     //this.addRingPoints();
-
-    if (this.options.neighbor) {
-      this.addNeighborPoints(
-        systems,
-        typeof this.options.hyperspace === "undefined",
-        this.options.neighbor.connectBorderSystems
-      );
-    }
 
     const delaunay = Delaunay.from(this.points.map(({ x, y }) => [x, y]));
     this.voronoi = delaunay.voronoi([-1000, -1000, 1000, 1000]);
@@ -143,85 +135,32 @@ export class SystemVoronoi {
     });
   }
 
-  private addHyperspacePoints(
+  private addHyperlanePoints(
     systems: System[],
     connectBorderSystems: boolean,
     spacing: number
   ) {
-    this.getHyperlanes(systems).forEach(({ from, to }) => {
-      const fromPoint = this.systemPointGetter.get(from);
-      const toPoint = this.systemPointGetter.get(to);
-
-      const distance = fromPoint.distance(toPoint);
-
-      let maxPoints = 0;
-      if (getSystemOwner(from) === getSystemOwner(to)) {
-        maxPoints = 1000;
-      } else {
-        maxPoints = connectBorderSystems ? 1000 : 0;
-      }
-
-      let t = Math.min(maxPoints + 1, Math.floor(distance / spacing));
-      if (t % 2 === 0) {
-        t += 1;
-      }
-
-      for (let i = 1; i < t; i++) {
-        const system = i * 2 < t ? to : from;
-        this.addPoint(
-          new Point(
-            (i * fromPoint.x) / t + ((t - i) * toPoint.x) / t,
-            (i * fromPoint.y) / t + ((t - i) * toPoint.y) / t
-          ),
-          system
-        );
-      }
-    });
-  }
-
-  private addNeighborPoints(
-    systems: System[],
-    connectHyperlanes: boolean,
-    connectBorderSystems: boolean
-  ) {
-    for (let i = 0; i < systems.length; i++) {
-      const from = systems[i];
-      const fromPoint = this.systemPointGetter.get(from);
-      for (let j = i + 1; j < systems.length; j++) {
-        const to = systems[j];
+    this.getHyperlanes(systems)
+      .filter((x) => !this.crossesAnyHyperlane(systems, x.from, x.to))
+      .forEach(({ from, to }) => {
+        const fromPoint = this.systemPointGetter.get(from);
         const toPoint = this.systemPointGetter.get(to);
+
         const distance = fromPoint.distance(toPoint);
 
-        // Only connect to neighbors
-        if (50 < distance) {
-          continue;
+        let maxPoints = 0;
+        if (getSystemOwner(from) === getSystemOwner(to)) {
+          maxPoints = 1000;
+        } else {
+          maxPoints = connectBorderSystems ? 1000 : 0;
         }
 
-        // Only connect hyperlanes if specified
-        if (!connectHyperlanes && from.hyperlanes.some((x) => x.to === to)) {
-          continue;
+        let t = Math.min(maxPoints + 1, Math.floor(distance / spacing));
+        if (t % 2 === 0) {
+          t += 1;
         }
 
-        // Only connect border systems if specified
-        if (
-          !connectBorderSystems &&
-          getSystemOwner(from) !== getSystemOwner(to)
-        ) {
-          continue;
-        }
-
-        // Ignore if there is a hyperlane in between
-        if (this.crossesAnyHyperlane(systems, from, to)) {
-          continue;
-        }
-
-        const t = 9;
         for (let i = 1; i < t; i++) {
-          /*
-          if (3 <= i && i <= 6) {
-            continue;
-          }
-           */
           const system = i * 2 < t ? to : from;
           this.addPoint(
             new Point(
@@ -231,8 +170,7 @@ export class SystemVoronoi {
             system
           );
         }
-      }
-    }
+      });
   }
 
   private crossesAnyHyperlane(

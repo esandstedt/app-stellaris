@@ -15,15 +15,10 @@ function render(model: Model, draw: IDraw) {
   const systemPointGetter = (() => {
     const fst = new CentroidSystemPointGetter(systems, "hull", {
       systemPointGetter: new SimpleSystemPointGetter(),
-      hyperspace: {
+      hyperlane: {
         connectBorderSystems: true,
         spacing: 12,
       },
-      /*
-      neighbor: {
-        connectBorderSystems: true,
-      },
-       */
       border: {
         lowerBound: 40,
         upperBound: 50,
@@ -32,15 +27,10 @@ function render(model: Model, draw: IDraw) {
 
     const snd = new CentroidSystemPointGetter(systems, "hull", {
       systemPointGetter: fst,
-      hyperspace: {
+      hyperlane: {
         connectBorderSystems: true,
         spacing: 10,
       },
-      /*
-      neighbor: {
-        connectBorderSystems: true,
-      },
-       */
       border: {
         lowerBound: 35,
         upperBound: 45,
@@ -49,15 +39,10 @@ function render(model: Model, draw: IDraw) {
 
     const thr = new CentroidSystemPointGetter(systems, "hull", {
       systemPointGetter: snd,
-      hyperspace: {
+      hyperlane: {
         connectBorderSystems: true,
         spacing: 8,
       },
-      /*
-      neighbor: {
-        connectBorderSystems: true,
-      },
-       */
       border: {
         lowerBound: 30,
         upperBound: 40,
@@ -66,15 +51,10 @@ function render(model: Model, draw: IDraw) {
 
     return new CentroidSystemPointGetter(systems, "average", {
       systemPointGetter: thr,
-      hyperspace: {
+      hyperlane: {
         connectBorderSystems: true,
         spacing: 6,
       },
-      /*
-      neighbor: {
-        connectBorderSystems: true,
-      },
-       */
       systemArea: {
         maxRadius: 5,
       },
@@ -87,15 +67,10 @@ function render(model: Model, draw: IDraw) {
 
   const voronoi = new SystemVoronoi(systems, {
     systemPointGetter,
-    hyperspace: {
+    hyperlane: {
       connectBorderSystems: false,
       spacing: 3,
     },
-    /*
-    neighbor: {
-      connectBorderSystems: false,
-    },
-     */
     border: {
       lowerBound: 30,
       upperBound: 50,
