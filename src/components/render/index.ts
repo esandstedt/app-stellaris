@@ -2,10 +2,12 @@ import { System, Model, Country } from "@esandstedt/stellaris-model";
 
 import { SystemVoronoi } from "./system/voronoi";
 import { Point } from "./point";
-import { getSystemColor, getSystemOwner, WHITE } from "./color";
+import { Color, getSystemColor, getSystemOwner, WHITE } from "./color";
 import { IDraw } from "./draw";
 import { SimpleSystemPointGetter } from "./system/point/simple";
 import { CentroidSystemPointGetter } from "./system/point/centroid";
+
+const DEFAULT_COLOR = new Color(240, 240, 240);
 
 function render(model: Model, draw: IDraw) {
   const systems = model.systems.getAll();
@@ -97,19 +99,19 @@ function render(model: Model, draw: IDraw) {
   })();
 
   // Draw background
-  //draw.rect(origin, draw.width, draw.height, "#000000");
+  //draw.rect(new Point(0, 0), draw.width, draw.height, "#000000");
 
   // Draw systems
   systems.forEach((system) => {
-    const color = getSystemColor(system, WHITE);
-    if (color !== WHITE) {
-      voronoi.getPolygons(system).forEach((polygon) => {
-        draw.polygon(
-          polygon.map(getDrawPoint),
-          color.blend(WHITE, 0.33).toString()
-        );
-      });
-    }
+    const color = getSystemColor(system, DEFAULT_COLOR);
+    voronoi.getPolygons(system).forEach((polygon) => {
+      draw.polygon(
+        polygon.map(getDrawPoint),
+        color === DEFAULT_COLOR
+          ? DEFAULT_COLOR.toString()
+          : color.blend(WHITE, 0.33).toString()
+      );
+    });
   });
 
   // Draw polygon borders
