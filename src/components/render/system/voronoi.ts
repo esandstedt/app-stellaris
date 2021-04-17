@@ -18,6 +18,9 @@ export interface SystemVoronoiOptions {
     lowerBound: number;
     upperBound: number;
   };
+  neighbor?: {
+    connectBorderSystems: boolean;
+  };
 }
 
 export class SystemVoronoi {
@@ -64,6 +67,14 @@ export class SystemVoronoi {
       );
     }
     //this.addRingPoints();
+
+    if (this.options.neighbor) {
+      this.addNeighborPoints(
+        systems,
+        typeof this.options.hyperspace === "undefined",
+        this.options.neighbor.connectBorderSystems
+      );
+    }
 
     const delaunay = Delaunay.from(this.points.map(({ x, y }) => [x, y]));
     this.voronoi = delaunay.voronoi([-1000, -1000, 1000, 1000]);
@@ -137,14 +148,7 @@ export class SystemVoronoi {
     connectBorderSystems: boolean,
     spacing: number
   ) {
-    const hyperlanes: Hyperlane[] = [];
-    systems.forEach((system) =>
-      system.hyperlanes
-        .filter((x) => x.from.id < x.to.id)
-        .forEach((x) => hyperlanes.push(x))
-    );
-
-    hyperlanes.forEach(({ from, to }) => {
+    this.getHyperlanes(systems).forEach(({ from, to }) => {
       const fromPoint = this.systemPointGetter.get(from);
       const toPoint = this.systemPointGetter.get(to);
 
@@ -173,6 +177,138 @@ export class SystemVoronoi {
         );
       }
     });
+  }
+
+  private addNeighborPoints(
+    systems: System[],
+    connectHyperlanes: boolean,
+    connectBorderSystems: boolean
+  ) {
+    for (let i = 0; i < systems.length; i++) {
+      const from = systems[i];
+      const fromPoint = this.systemPointGetter.get(from);
+      for (let j = i + 1; j < systems.length; j++) {
+        const to = systems[j];
+        const toPoint = this.systemPointGetter.get(to);
+        const distance = fromPoint.distance(toPoint);
+
+        // Only connect to neighbors
+        if (50 < distance) {
+          continue;
+        }
+
+        // Only connect hyperlanes if specified
+        if (!connectHyperlanes && from.hyperlanes.some((x) => x.to === to)) {
+          continue;
+        }
+
+        // Only connect border systems if specified
+        if (
+          !connectBorderSystems &&
+          getSystemOwner(from) !== getSystemOwner(to)
+        ) {
+          continue;
+        }
+
+        // Ignore if there is a hyperlane in between
+        if (this.crossesAnyHyperlane(systems, from, to)) {
+          continue;
+        }
+
+        const t = 9;
+        for (let i = 1; i < t; i++) {
+          /*
+          if (3 <= i && i <= 6) {
+            continue;
+          }
+           */
+          const system = i * 2 < t ? to : from;
+          this.addPoint(
+            new Point(
+              (i * fromPoint.x) / t + ((t - i) * toPoint.x) / t,
+              (i * fromPoint.y) / t + ((t - i) * toPoint.y) / t
+            ),
+            system
+          );
+        }
+      }
+    }
+  }
+
+  private crossesAnyHyperlane(
+    systems: System[],
+    from: System,
+    to: System
+  ): boolean {
+    const fromPoint = this.systemPointGetter.get(from);
+    const toPoint = this.systemPointGetter.get(to);
+
+    return this.getHyperlanes(systems)
+      .filter((x) => x.from !== from && x.to !== from)
+      .filter((x) => x.from !== to && x.to !== to)
+      .some((hyperlane) =>
+        this.linesIntersect(
+          fromPoint,
+          toPoint,
+          this.systemPointGetter.get(hyperlane.from),
+          this.systemPointGetter.get(hyperlane.to)
+        )
+      );
+  }
+
+  private linesIntersect(p1: Point, q1: Point, p2: Point, q2: Point): boolean {
+    const onSegment = (p: Point, q: Point, r: Point): boolean =>
+      q.x <= Math.max(p.x, r.x) &&
+      q.x >= Math.min(p.x, r.x) &&
+      q.y <= Math.max(p.y, r.y) &&
+      q.y >= Math.min(p.y, r.y);
+
+    const getOrientation = (p: Point, q: Point, r: Point) => {
+      const val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+      if (Math.abs(val) < 1e-6) return 0;
+      return val > 0 ? 1 : 2;
+    };
+
+    // Find the four orientations needed for general and
+    // special cases
+    const o1 = getOrientation(p1, q1, p2);
+    const o2 = getOrientation(p1, q1, q2);
+    const o3 = getOrientation(p2, q2, p1);
+    const o4 = getOrientation(p2, q2, q1);
+
+    // General case
+    if (o1 !== o2 && o3 !== o4) {
+      return true;
+    }
+
+    // Special Cases
+    // p1, q1 and p2 are colinear and p2 lies on segment p1q1
+    if (o1 === 0 && onSegment(p1, p2, q1)) {
+      return true;
+    }
+
+    // p1, q1 and q2 are colinear and q2 lies on segment p1q1
+    if (o2 === 0 && onSegment(p1, q2, q1)) {
+      return true;
+    }
+
+    // p2, q2 and p1 are colinear and p1 lies on segment p2q2
+    if (o3 === 0 && onSegment(p2, p1, q2)) {
+      return true;
+    }
+
+    // p2, q2 and q1 are colinear and q1 lies on segment p2q2
+    if (o4 === 0 && onSegment(p2, q1, q2)) {
+      return true;
+    }
+
+    return false; // Doesn't fall in any of the above cases
+  }
+
+  private getHyperlanes(systems: System[]): Hyperlane[] {
+    const set = new Set<Hyperlane>();
+    systems.forEach((x) => x.hyperlanes.forEach((y) => set.add(y)));
+    return Array.from(set);
   }
 
   private addBorderPoints(lowerBound: number, upperBound: number) {

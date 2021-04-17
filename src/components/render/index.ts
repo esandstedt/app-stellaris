@@ -19,6 +19,11 @@ function render(model: Model, draw: IDraw) {
         connectBorderSystems: true,
         spacing: 12,
       },
+      /*
+      neighbor: {
+        connectBorderSystems: true,
+      },
+       */
       border: {
         lowerBound: 40,
         upperBound: 50,
@@ -31,6 +36,11 @@ function render(model: Model, draw: IDraw) {
         connectBorderSystems: true,
         spacing: 10,
       },
+      /*
+      neighbor: {
+        connectBorderSystems: true,
+      },
+       */
       border: {
         lowerBound: 35,
         upperBound: 45,
@@ -43,6 +53,11 @@ function render(model: Model, draw: IDraw) {
         connectBorderSystems: true,
         spacing: 8,
       },
+      /*
+      neighbor: {
+        connectBorderSystems: true,
+      },
+       */
       border: {
         lowerBound: 30,
         upperBound: 40,
@@ -55,6 +70,11 @@ function render(model: Model, draw: IDraw) {
         connectBorderSystems: true,
         spacing: 6,
       },
+      /*
+      neighbor: {
+        connectBorderSystems: true,
+      },
+       */
       systemArea: {
         maxRadius: 5,
       },
@@ -71,6 +91,11 @@ function render(model: Model, draw: IDraw) {
       connectBorderSystems: false,
       spacing: 3,
     },
+    /*
+    neighbor: {
+      connectBorderSystems: false,
+    },
+     */
     border: {
       lowerBound: 30,
       upperBound: 50,
@@ -118,7 +143,7 @@ function render(model: Model, draw: IDraw) {
   /*
   systems.forEach((system) => {
     voronoi.getPolygons(system).forEach((polygon) => {
-      draw.polyline(polygon.map(getDrawPoint), 1, "#ffffff", 0.1);
+      draw.polyline(polygon.map(getDrawPoint), 1, "#000000", 0.1);
     });
   });
    */
