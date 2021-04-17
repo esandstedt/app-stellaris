@@ -176,17 +176,30 @@ function render(model: Model, draw: IDraw) {
 
   // Draw systems
   systems.forEach((system) => {
+    draw.circle(
+      getDrawPoint(systemPointGetter.get(system)),
+      1,
+      "#000",
+      "#000",
+      1
+    );
+  });
+
+  // Draw pop counts
+  systems.forEach((system) => {
     const popCount = system.planets
       .map((x) => x.pops.length)
       .reduce((a, b) => a + b);
 
-    const point = getDrawPoint(systemPointGetter.get(system));
-
     if (0 < popCount) {
       const radius = Math.max(1, 1.5 * Math.sqrt(popCount / Math.PI));
-      draw.circle(point, radius, getSystemColor(system).toString(), "#000", 1);
-    } else {
-      draw.circle(point, 1, "#000", "#000", 1);
+      draw.circle(
+        getDrawPoint(systemPointGetter.get(system)),
+        radius,
+        getSystemColor(system).toString(),
+        "#000",
+        1
+      );
     }
   });
 
