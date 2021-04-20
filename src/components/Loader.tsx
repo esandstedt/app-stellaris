@@ -44,8 +44,6 @@ export class Loader extends React.Component<Props, State> {
     const { files } = event.target;
     if (files !== null) {
       const file = files[0];
-      console.log(file);
-
       if (file) {
         this.setState({ error: undefined, loading: true });
 
@@ -60,6 +58,7 @@ export class Loader extends React.Component<Props, State> {
     const result = (event.target as any).result;
     try {
       const model = await load(result);
+      console.log(model);
       this.setState({ loading: false });
       this.props.onLoad(model);
     } catch (error) {
