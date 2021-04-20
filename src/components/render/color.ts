@@ -143,6 +143,14 @@ export const getSystemColor = (
   defaultColor: Color = BLACK
 ): Color => {
   const owner = getSystemOwner(system);
+  if (typeof owner !== "undefined") {
+    return getCountryColor(owner);
+  } else {
+    return defaultColor;
+  }
+
+  /*
+  const owner = getSystemOwner(system);
   const controller = getSystemController(system);
 
   if (typeof owner !== "undefined" && typeof controller !== "undefined") {
@@ -156,4 +164,5 @@ export const getSystemColor = (
   } else {
     return defaultColor;
   }
+   */
 };
