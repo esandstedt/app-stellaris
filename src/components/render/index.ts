@@ -69,7 +69,7 @@ function render(model: Model, draw: IDraw) {
     systemPointGetter,
     hyperlane: {
       connectBorderSystems: false,
-      spacing: 3,
+      spacing: 4,
     },
     border: {
       lowerBound: 30,
