@@ -285,7 +285,7 @@ export class SystemVoronoi {
   ) {
     const offset = new Point(Math.cos(angle), Math.sin(angle));
     const points = [];
-    for (var i = lowerBound; i < upperBound; i++) {
+    for (var i = lowerBound; i <= upperBound; i++) {
       const current = point.add(offset.mult(i));
       const valid = neighbors.every((x) => current.distance(x) > lowerBound);
       if (valid) {

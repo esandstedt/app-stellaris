@@ -6,6 +6,8 @@ import { IDraw } from "./render/draw";
 import { Point } from "./render/point";
 import { render } from "./render";
 
+const SIZE = 2000;
+
 interface Element {
   type: string;
   props: {};
@@ -114,7 +116,7 @@ export default class Svg extends React.Component<Props, State> {
 
   componentDidMount() {
     const { model } = this.props;
-    const draw = new SvgDraw(2000, 2000);
+    const draw = new SvgDraw(SIZE, SIZE);
     render(model, draw);
     this.setState({ elements: draw.elements });
     this.props.setApi({
@@ -136,11 +138,9 @@ export default class Svg extends React.Component<Props, State> {
   render() {
     const { elements } = this.state;
     return (
-      <div>
-        <svg ref={this.svgRef} viewBox="0 0 2000 2000">
-          {elements.map((element, index) => this.renderElement(element, index))}
-        </svg>
-      </div>
+      <svg ref={this.svgRef} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+        {elements.map((element, index) => this.renderElement(element, index))}
+      </svg>
     );
   }
 

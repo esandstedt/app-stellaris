@@ -1182,12 +1182,12 @@
   resolved "https://registry.yarnpkg.com/@csstools/normalize.css/-/normalize.css-10.1.0.tgz#f0950bba18819512d42f7197e56c518aa491cf18"
   integrity sha512-ij4wRiunFfaJxjB0BdrYHIH8FxBJpOwNPhhAcunlmPdXudL1WQV1qoP9un6JsEBAgQH+7UXyyjh0g7jTxXK6tg==
 
-"@esandstedt/stellaris-model@^0.5.0":
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/@esandstedt/stellaris-model/-/stellaris-model-0.5.1.tgz#18992d1a58af84b4814799ee0d18217fbd543bd0"
-  integrity sha512-I4FNzaZC0kbr+F71apf5lxHPWBs5vUEt7fRceDrTjiLCn9Fe0UTORcmORwqYs7h21D6XDiMp6XGYR4I5A2BoSQ==
+"@esandstedt/stellaris-model@^0.5.2":
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/@esandstedt/stellaris-model/-/stellaris-model-0.5.2.tgz#51e45bdb0ed92b942f625d57b7f12d77f4d37dff"
+  integrity sha512-oVZef7YfMubQb9G9N2j+XA/NJIlIuaKOw2SzSW+TFRAr1pZLqfl00ogNSuS1BwBj8F7MR6cwHYrMrojZvtybxQ==
   dependencies:
-    jszip "^3.2.2"
+    jszip "^3.7.1"
 
 "@eslint/eslintrc@^0.4.0":
   version "0.4.0"
@@ -6841,10 +6841,10 @@ jsprim@^1.2.2:
     array-includes "^3.1.2"
     object.assign "^4.1.2"
 
-jszip@^3.2.2:
-  version "3.6.0"
-  resolved "https://registry.yarnpkg.com/jszip/-/jszip-3.6.0.tgz#839b72812e3f97819cc13ac4134ffced95dd6af9"
-  integrity sha512-jgnQoG9LKnWO3mnVNBnfhkh0QknICd1FGSrXcgrl67zioyJ4wgx25o9ZqwNtrROSflGBCGYnJfjrIyRIby1OoQ==
+jszip@^3.7.1:
+  version "3.7.1"
+  resolved "https://registry.yarnpkg.com/jszip/-/jszip-3.7.1.tgz#bd63401221c15625a1228c556ca8a68da6fda3d9"
+  integrity sha512-ghL0tz1XG9ZEmRMcEN2vt7xabrDdqHHeykgARpmZ0BiIctWxM47Vt63ZO2dnp4QYt/xJVLLy5Zv1l/xRdh2byg==
   dependencies:
     lie "~3.3.0"
     pako "~1.0.2"
