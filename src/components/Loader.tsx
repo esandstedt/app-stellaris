@@ -72,8 +72,20 @@ export class Loader extends React.Component<Props, State> {
 
     return (
       <>
-        <div style={{ display: "flex" }}>
-          <input type="file" onChange={this.onChange} disabled={loading} />
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          {!loading && (
+            <label htmlFor="file" className="ui button huge blue">
+              Pick a savefile
+            </label>
+          )}
+          <input
+            id="file"
+            type="file"
+            accept=".sav"
+            onChange={this.onChange}
+            disabled={loading}
+            style={{ display: "none" }}
+          />
           {loading && <LoadingIcon />}
         </div>
         {error && (
@@ -87,7 +99,7 @@ export class Loader extends React.Component<Props, State> {
             >
               <ErrorIcon />
               <span>
-                Uh-oh! Something went wrong while trying to render the map.
+                Uh-oh! Something went wrong while trying to load the savefile.
                 Here's the stack trace:
               </span>
             </div>

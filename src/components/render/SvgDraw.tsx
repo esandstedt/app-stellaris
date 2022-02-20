@@ -1,20 +1,13 @@
-import React, { createRef } from "react";
-import { Model } from "@esandstedt/stellaris-model";
-import { saveSvgAsPng } from "save-svg-as-png";
+import { IDraw } from "./draw";
+import { Point } from "./point";
 
-import { IDraw } from "./render/draw";
-import { Point } from "./render/point";
-import { render } from "./render";
-
-const SIZE = 2000;
-
-interface Element {
+export interface SvgDrawElement {
   type: string;
   props: {};
 }
 
-class SvgDraw implements IDraw {
-  public elements: Element[] = [];
+export class SvgDraw implements IDraw {
+  public elements: SvgDrawElement[] = [];
 
   constructor(public width: number, public height: number) {}
 
@@ -92,60 +85,5 @@ class SvgDraw implements IDraw {
         strokeWidth,
       },
     });
-  }
-}
-
-interface Props {
-  model: Model;
-  setApi: (api: { download: () => void }) => void;
-}
-
-interface State {
-  elements: Element[];
-}
-
-export default class Svg extends React.Component<Props, State> {
-  private svgRef = createRef<SVGSVGElement>();
-
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      elements: [],
-    };
-  }
-
-  componentDidMount() {
-    const { model } = this.props;
-    const draw = new SvgDraw(SIZE, SIZE);
-    render(model, draw);
-    this.setState({ elements: draw.elements });
-    this.props.setApi({
-      download: () => this.download(),
-    });
-  }
-
-  componentWillUnmount() {
-    this.props.setApi({ download: () => {} });
-  }
-
-  download() {
-    const element = this.svgRef.current;
-    if (element) {
-      saveSvgAsPng(element, "map.png");
-    }
-  }
-
-  render() {
-    const { elements } = this.state;
-    return (
-      <svg ref={this.svgRef} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-        {elements.map((element, index) => this.renderElement(element, index))}
-      </svg>
-    );
-  }
-
-  private renderElement(element: Element, key: number) {
-    const { type, props } = element;
-    return React.createElement(type, { key, ...props });
   }
 }

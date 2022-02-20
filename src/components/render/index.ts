@@ -9,9 +9,10 @@ import { CentroidSystemPointGetter } from "./system/point/centroid";
 
 const DEFAULT_COLOR = new Color(240, 240, 240);
 
-function render(model: Model, draw: IDraw) {
+function render(model: Model, draw: IDraw, options: any) {
   const systems = model.systems.getAll();
 
+  /*
   const systemPointGetter = (() => {
     const fst = new CentroidSystemPointGetter(systems, "hull", {
       systemPointGetter: new SimpleSystemPointGetter(),
@@ -64,6 +65,9 @@ function render(model: Model, draw: IDraw) {
       },
     });
   })();
+   */
+
+  const systemPointGetter = new SimpleSystemPointGetter();
 
   const voronoi = new SystemVoronoi(systems, {
     systemPointGetter,

@@ -2,35 +2,25 @@ import React, { useState } from "react";
 import { Model } from "@esandstedt/stellaris-model";
 
 import { Loader } from "./components/Loader";
-import Svg from "./components/Svg";
+import { Renderer } from "./components/Renderer";
 
 import "./App.css";
+import "semantic-ui-css/semantic.min.css";
 
 function App() {
   const [model, setModel] = useState<Model>();
-  const [svg, setSvg] = useState<{ download: () => void }>({
-    download: () => {},
-  });
 
   return (
-    <div className="app container">
+    <div className="app">
       <div className="header">
-        <h1 className="header-title">Stellaris Map</h1>
-        <div className="header-extra">
-          {model && (
-            <>
-              <button onClick={() => svg.download()}>Download</button>
-              <button onClick={() => setModel(undefined)}>Reset</button>
-            </>
-          )}
-        </div>
+        <h1>Stellaris Map Generator</h1>
       </div>
       {!model && (
         <div className="loader">
           <Loader onLoad={setModel} />
         </div>
       )}
-      {model && <Svg model={model} setApi={setSvg} />}
+      {model && <Renderer model={model} onClose={() => setModel(undefined)} />}
     </div>
   );
 }
