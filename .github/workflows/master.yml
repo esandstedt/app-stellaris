@@ -16,10 +16,10 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
-      - run: yarn install --frozen-lockfile
+      - run: npm ci
       - name: build
-        run: yarn build
+        run: npm run build
       - name: aws s3 sync
-        run: aws s3 sync ./build s3://apps.sandstedt.eu/stellaris
+        run: aws s3 sync ./out s3://apps.sandstedt.eu/stellaris
       - name: aws cloudfront create-invalidation
         run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION }} --paths "/stellaris/*"
