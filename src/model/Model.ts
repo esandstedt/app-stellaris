@@ -23,7 +23,7 @@ export class Model {
   }
 }
 
-class GalacticObject {
+export class GalacticObject {
   public name: string;
   public x: number;
   public y: number;

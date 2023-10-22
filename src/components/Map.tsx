@@ -1,13 +1,18 @@
-import { Model } from "@/model/Model";
+import { GalacticObject, Model } from "@/model/Model";
 import React from "react";
 import * as d3 from "d3";
+
+interface Node {
+  object: GalacticObject;
+  point: Point;
+}
 
 function onlyUnique<T>(value: T, index: number, array: T[]) {
   return array.indexOf(value) === index;
 }
 
 const COLORS: { [key: string]: string } = {
-  black: "#262626",
+  black: "#404040",
   blue: "#3b82f6",
   brown: "#b45309",
   burgundy: "#be123c",
@@ -41,6 +46,79 @@ function mapColor(color: string) {
   }
 }
 
+function forceSimulation(points: Point[], edges: [number, number][]): Point[] {
+  const nodes = points.map((point) => ({ p: point, x: point[0], y: point[1] }));
+  const links = edges.map((edge) => ({ source: edge[0], target: edge[1] }));
+
+  const simulation = d3
+    .forceSimulation(nodes)
+    .force("link", d3.forceLink(links).distance(8).strength(1))
+    .force("collide", d3.forceCollide().radius(8))
+    .force("x", d3.forceX((node) => (node as any).p[0]).strength(1))
+    .force("y", d3.forceY((node) => (node as any).p[1]).strength(1));
+
+  for (let i = 0; i < 100; i++) {
+    simulation.tick();
+  }
+  simulation.stop();
+
+  return nodes.map(({ x, y }) => [x, y]);
+}
+
+function getScale(
+  points: Point[],
+  center: Point,
+  width: number,
+  height: number
+) {
+  const ex = width / 2;
+  const ey = height / 2;
+
+  if (!points.length) {
+    return 1.0;
+  }
+
+  let mx = 0;
+  let my = 0;
+  points.forEach((p) => {
+    mx = Math.max(mx, Math.abs(center[0] - p[0]));
+    my = Math.max(my, Math.abs(center[1] - p[1]));
+  });
+
+  const rx = (0.85 * ex) / mx;
+  const ry = (0.85 * ey) / my;
+
+  return Math.min(rx, ry);
+}
+
+function circle(point: Point, radius: number): Point[] {
+  const result: Point[] = [];
+  for (var i = 360; i > 0; i -= 15) {
+    result.push([
+      point[0] + radius * Math.cos((i * Math.PI) / 180),
+      point[1] + radius * Math.sin((i * Math.PI) / 180),
+    ]);
+  }
+  return result;
+}
+
+function intersection(a: Point[], b: Point[]): Point[] {
+  try {
+    return polygonClip(a, b) || [];
+  } catch (error) {
+    console.error({
+      message: "Could not calculate intersection",
+      a,
+      b,
+    });
+    throw error;
+  }
+}
+
+function polygonPoints(points: Point[]): string {
+  return points.map((p) => `${p[0]},${p[1]}`).join(" ");
+}
+
 type Point = [number, number];
 
 interface Props {
@@ -50,7 +128,7 @@ interface Props {
 }
 
 interface State {
-  nodes: { key: string; x: number; y: number }[];
+  nodes: Node[];
 }
 
 export class Map extends React.Component<Props, State> {
@@ -63,74 +141,28 @@ export class Map extends React.Component<Props, State> {
   }
 
   componentDidMount(): void {
-    const nodes = this.props.model.galacticObjects.map((obj) => ({
-      obj,
-      x: obj.x,
-      y: obj.y,
-    }));
+    const objects = this.props.model.galacticObjects;
 
-    const links = this.props.model.galacticObjects
-      .map((obj) =>
-        obj.hyperlanes
-          .map(({ to }) => ({ from: obj.key, to }))
-          .map(({ from, to }) => {
-            const source = nodes.find((x) => x.obj.key === from);
-            const target = nodes.find((x) => x.obj.key === to);
-
-            if (!source || !target) {
-              throw new Error();
-            }
-
-            return {
-              source,
-              target,
-            };
-          })
-      )
-      .reduce((a, b) => a.concat(b));
-
-    const simulation = d3
-      .forceSimulation(nodes)
-      .force("link", d3.forceLink(links).distance(10).strength(1))
-      .force("center", d3.forceCenter())
-      .force("collide", d3.forceCollide().radius(10))
-      .force("x", d3.forceX((node) => (node as any).obj.x).strength(1.5))
-      .force("y", d3.forceY((node) => (node as any).obj.y).strength(1.5));
-
-    for (let i = 0; i < 100; i++) {
-      simulation.tick();
-    }
-    simulation.stop();
+    const points = forceSimulation(
+      objects.map((obj) => [obj.x, obj.y]),
+      objects
+        .map(({ key, hyperlanes }) =>
+          hyperlanes.map<[number, number]>(({ to }) => [
+            objects.findIndex((x) => x.key === key),
+            objects.findIndex((x) => x.key === to),
+          ])
+        )
+        .reduce((a, b) => a.concat(b))
+    );
 
     this.setState({
-      nodes: nodes.map(({ obj, x, y }) => ({ key: obj.key, x, y })),
+      nodes: objects.map((object, index) => ({ object, point: points[index] })),
     });
-  }
-
-  getScale() {
-    const ex = this.props.width / 2;
-    const ey = this.props.height / 2;
-
-    if (!this.state.nodes.length) {
-      return 1.0;
-    }
-
-    let mx = 0;
-    let my = 0;
-    this.state.nodes.forEach(({ x, y }) => {
-      mx = Math.max(mx, Math.abs(x));
-      my = Math.max(mx, Math.abs(x));
-    });
-
-    const rx = (0.9 * ex) / mx;
-    const ry = (0.9 * ey) / my;
-
-    return Math.min(rx, ry);
   }
 
   render() {
     const { width, height } = this.props;
-    const scale = this.getScale();
+    const { nodes } = this.state;
 
     const controlledObjects = this.props.model.countries
       .filter(
@@ -149,86 +181,67 @@ export class Map extends React.Component<Props, State> {
         return [obj, x[1]];
       });
 
-    const objects = this.state.nodes.map<{ key: string; point: Point }>(
-      (node) => ({
-        key: node.key,
-        point: [-scale * node.x + width / 2, scale * node.y + height / 2],
-      })
+    const scale = getScale(
+      this.state.nodes.map(({ point }) => point),
+      [0, 0],
+      this.props.width,
+      this.props.height
     );
 
-    const lines = this.props.model.galacticObjects
-      .filter((x) => this.state.nodes.findIndex((y) => y.key == x.key) !== -1)
-      .map((obj) => obj.hyperlanes.map(({ to }) => ({ from: obj.key, to })))
+    const scaledNodes = nodes.map<Node>(({ object, point }) => ({
+      object,
+      point: [-scale * point[0], scale * point[1]],
+    }));
+
+    const lines = scaledNodes
+      .map(({ object }) =>
+        object.hyperlanes.map(({ to }) => ({ from: object.key, to }))
+      )
       .reduce((prev, cur) => prev.concat(cur), [])
       .filter(({ from, to }) => from < to)
       .map(({ from, to }) => {
-        const f = objects.find((x) => x.key === from);
-        const t = objects.find((x) => x.key === to);
+        const pf = scaledNodes.find((n) => n.object.key === from)?.point;
+        const pt = scaledNodes.find((n) => n.object.key === to)?.point;
 
-        if (!f || !t) {
+        if (!pf || !pt) {
           throw new Error();
         }
 
         return {
           from,
           to,
-          x1: f.point[0],
-          y1: f.point[1],
-          x2: t.point[0],
-          y2: t.point[1],
+          x1: pf[0],
+          y1: pf[1],
+          x2: pt[0],
+          y2: pt[1],
         };
       });
 
-    const delaunay = d3.Delaunay.from(objects.map((x) => x.point));
-    const voronoi = delaunay.voronoi([0, 0, width, height]);
-
-    function getShell(index: number, size: number): Point[] {
-      const p = objects[index].point;
-
-      const shell: Point[] = [];
-      for (var i = 360; i > 0; i -= 15) {
-        shell.push([
-          p[0] + size * Math.cos((i * Math.PI) / 180),
-          p[1] + size * Math.sin((i * Math.PI) / 180),
-        ]);
-      }
-
-      return shell;
-    }
-
-    function intersection(index: number, size: number) {
-      const a = getShell(index, scale * size);
-      const b = voronoi.cellPolygon(index);
-      try {
-        return polygonClip(a, b) || [];
-      } catch (error) {
-        console.error({
-          message: "Could not calculate intersection",
-          index,
-          a,
-          b,
-        });
-        throw error;
-      }
-    }
-
-    function polygonPoints(points: Point[]): string {
-      return points.map((p) => `${p[0]},${p[1]}`).join(" ");
-    }
+    const delaunay = d3.Delaunay.from(scaledNodes.map(({ point }) => point));
+    const voronoi = delaunay.voronoi([-width, -height, width, height]);
 
     return (
-      <svg width={width} height={height}>
-        {objects.map((obj, i) => (
+      <svg
+        width={width}
+        height={height}
+        viewBox={`${-width / 2} ${-height / 2} ${width} ${height}`}
+      >
+        {scaledNodes.map((node, i) => (
           <polygon
             key={i}
-            fill="#eee"
-            points={polygonPoints(intersection(i, 20))}
+            fill="#e2e8f0"
+            points={polygonPoints(
+              intersection(
+                circle(node.point, scale * 20),
+                voronoi.cellPolygon(i)
+              )
+            )}
           />
         ))}
 
-        {objects.map((obj, i) => {
+        {scaledNodes.map((node, i) => {
           const controllingCountries = controlledObjects
-            .filter((x) => x[0] === obj.key)
+            .filter((x) => x[0] === node.object.key)
             .map((x) => x[1])
             .filter(onlyUnique);
 
@@ -236,7 +249,7 @@ export class Map extends React.Component<Props, State> {
             return null;
           }
 
-          let fill = "#ddd";
+          let fill = "#334155";
           if (controllingCountries.length === 1) {
             const country = this.props.model.countries.find(
               (x) => x.key === controllingCountries[0]
@@ -250,9 +263,14 @@ export class Map extends React.Component<Props, State> {
             <polygon
               key={i}
               strokeWidth={1 * scale}
-              stroke={fill}
+              stroke="#e2e8f0"
               fill={fill}
-              points={polygonPoints(intersection(i, 20))}
+              points={polygonPoints(
+                intersection(
+                  circle(node.point, scale * 20),
+                  voronoi.cellPolygon(i)
+                )
+              )}
             />
           );
         })}
@@ -264,18 +282,18 @@ export class Map extends React.Component<Props, State> {
             y1={line.y1}
             x2={line.x2}
             y2={line.y2}
-            stroke="black"
+            stroke="#0f172a"
             strokeWidth={1 * scale}
-            opacity={0.2}
+            opacity={0.25}
           />
         ))}
-        {objects.map(({ key, point }) => (
+        {scaledNodes.map(({ object, point }) => (
           <circle
-            key={key}
+            key={object.key}
             cx={point[0]}
             cy={point[1]}
             r={2 * scale}
-            stroke="black"
+            fill="#0f172a"
           />
         ))}
       </svg>
