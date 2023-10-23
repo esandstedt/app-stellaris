@@ -44,14 +44,14 @@ export class GalacticObject {
   }
 }
 
-class Country {
+export class Country {
   public name: string;
   public color: string;
   public controlledPlanets: string[];
   public type: string;
   constructor(public key: string, public document: any) {
     this.name = document.name.key;
-    this.controlledPlanets = document.controlled_planets;
+    this.controlledPlanets = document.controlled_planets || [];
 
     this.color = this.getColor();
 

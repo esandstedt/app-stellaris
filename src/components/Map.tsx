@@ -1,4 +1,4 @@
-import { GalacticObject, Model } from "@/model/Model";
+import { Country, GalacticObject, Model } from "@/model/Model";
 import React from "react";
 import * as d3 from "d3";
 
@@ -65,6 +65,33 @@ function forceSimulation(points: Point[], edges: [number, number][]): Point[] {
   return nodes.map(({ x, y }) => [x, y]);
 }
 
+function getControllers(model: Model): { [key: string]: Country[] } {
+  const result: { [key: string]: Country[] } = {};
+  model.countries
+    .filter(
+      (x) =>
+        x.type === "default" ||
+        x.type === "caravaneer_home" ||
+        x.type === "dormant_marauders" ||
+        x.type === "fallen_empire"
+    )
+    .forEach((country) => {
+      country.controlledPlanets
+        .map((x) => model.planets.find((y) => y.key === x)?.galacticObject)
+        .filter(onlyUnique)
+        .forEach((key) => {
+          if (key) {
+            if (result[key]) {
+              result[key].push(country);
+            } else {
+              result[key] = [country];
+            }
+          }
+        });
+    });
+  return result;
+}
+
 function getScale(
   points: Point[],
   center: Point,
@@ -128,6 +155,7 @@ interface Props {
 }
 
 interface State {
+  controllers: { [key: string]: Country[] };
   nodes: Node[];
 }
 
@@ -136,12 +164,14 @@ export class Map extends React.Component<Props, State> {
     super(props);
 
     this.state = {
+      controllers: {},
       nodes: [],
     };
   }
 
   componentDidMount(): void {
-    const objects = this.props.model.galacticObjects;
+    const { model } = this.props;
+    const objects = model.galacticObjects;
 
     const points = forceSimulation(
       objects.map((obj) => [obj.x, obj.y]),
@@ -158,30 +188,21 @@ export class Map extends React.Component<Props, State> {
     );
 
     this.setState({
+      controllers: getControllers(model),
       nodes: objects.map((object, index) => ({ object, point: points[index] })),
     });
   }
 
   render() {
     const { width, height } = this.props;
-    const { nodes } = this.state;
+    const { controllers, nodes } = this.state;
 
-    const controlledObjects = this.props.model.countries
-      .filter(
-        (x) =>
-          x.type === "default" ||
-          x.type === "caravaneer_home" ||
-          x.type === "dormant_marauders" ||
-          x.type === "fallen_empire"
+    const edges = nodes
+      .map(({ object }) =>
+        object.hyperlanes.map(({ to }) => ({ from: object.key, to }))
       )
-      .map((x) => (x.controlledPlanets || []).map((y) => [y, x.key]))
-      .reduce((a, b) => a.concat(b), [])
-      .map((x) => {
-        const obj = this.props.model.planets.find(
-          (y) => y.key === x[0]
-        )?.galacticObject;
-        return [obj, x[1]];
-      });
+      .reduce((prev, cur) => prev.concat(cur), [])
+      .filter(({ from, to }) => from < to);
 
     const scale = getScale(
       this.state.nodes.map(({ point }) => point),
@@ -195,32 +216,18 @@ export class Map extends React.Component<Props, State> {
       point: [-scale * point[0], scale * point[1]],
     }));
 
-    const lines = scaledNodes
-      .map(({ object }) =>
-        object.hyperlanes.map(({ to }) => ({ from: object.key, to }))
-      )
-      .reduce((prev, cur) => prev.concat(cur), [])
-      .filter(({ from, to }) => from < to)
-      .map(({ from, to }) => {
-        const pf = scaledNodes.find((n) => n.object.key === from)?.point;
-        const pt = scaledNodes.find((n) => n.object.key === to)?.point;
+    const getPolygon = (() => {
+      const delaunay = d3.Delaunay.from(scaledNodes.map(({ point }) => point));
+      const voronoi = delaunay.voronoi([-width, -height, width, height]);
 
-        if (!pf || !pt) {
-          throw new Error();
-        }
-
-        return {
-          from,
-          to,
-          x1: pf[0],
-          y1: pf[1],
-          x2: pt[0],
-          y2: pt[1],
-        };
-      });
-
-    const delaunay = d3.Delaunay.from(scaledNodes.map(({ point }) => point));
-    const voronoi = delaunay.voronoi([-width, -height, width, height]);
+      return (node: Node): Point[] => {
+        const index = scaledNodes.indexOf(node);
+        return intersection(
+          circle(node.point, scale * 20),
+          voronoi.cellPolygon(index)
+        );
+      };
+    })();
 
     return (
       <svg
@@ -228,34 +235,26 @@ export class Map extends React.Component<Props, State> {
         height={height}
         viewBox={`${-width / 2} ${-height / 2} ${width} ${height}`}
       >
+        {/* GRAY CELLS */}
         {scaledNodes.map((node, i) => (
           <polygon
             key={i}
             fill="#e2e8f0"
-            points={polygonPoints(
-              intersection(
-                circle(node.point, scale * 20),
-                voronoi.cellPolygon(i)
-              )
-            )}
+            points={polygonPoints(getPolygon(node))}
           />
         ))}
 
+        {/* COLORED CELLS */}
         {scaledNodes.map((node, i) => {
-          const controllingCountries = controlledObjects
-            .filter((x) => x[0] === node.object.key)
-            .map((x) => x[1])
-            .filter(onlyUnique);
+          const countries = controllers[node.object.key] || [];
 
-          if (controllingCountries.length === 0) {
+          if (countries.length === 0) {
             return null;
           }
 
           let fill = "#334155";
-          if (controllingCountries.length === 1) {
-            const country = this.props.model.countries.find(
-              (x) => x.key === controllingCountries[0]
-            );
+          if (countries.length === 1) {
+            const country = countries[0];
             if (country) {
               fill = mapColor(country.color);
             }
@@ -267,28 +266,35 @@ export class Map extends React.Component<Props, State> {
               strokeWidth={1 * scale}
               stroke="#e2e8f0"
               fill={fill}
-              points={polygonPoints(
-                intersection(
-                  circle(node.point, scale * 20),
-                  voronoi.cellPolygon(i)
-                )
-              )}
+              points={polygonPoints(getPolygon(node))}
             />
           );
         })}
 
-        {lines.map((line, index) => (
-          <line
-            key={`${line.from}-${line.to}-${index}`}
-            x1={line.x1}
-            y1={line.y1}
-            x2={line.x2}
-            y2={line.y2}
-            stroke="#0f172a"
-            strokeWidth={1 * scale}
-            opacity={0.25}
-          />
-        ))}
+        {/* HYPERLANES */}
+        {edges.map(({ from, to }, index) => {
+          const pf = scaledNodes.find((n) => n.object.key == from)?.point;
+          const pt = scaledNodes.find((n) => n.object.key == to)?.point;
+
+          if (!pf || !pt) {
+            return null;
+          }
+
+          return (
+            <line
+              key={`${from}-${to}-${index}`}
+              x1={pf[0]}
+              y1={pf[1]}
+              x2={pt[0]}
+              y2={pt[1]}
+              stroke="#0f172a"
+              strokeWidth={1 * scale}
+              opacity={0.25}
+            />
+          );
+        })}
+
+        {/* SYSTEM POINTS */}
         {scaledNodes.map(({ object, point }) => (
           <circle
             key={object.key}
