@@ -52,8 +52,8 @@ function forceSimulation(points: Point[], edges: [number, number][]): Point[] {
 
   const simulation = d3
     .forceSimulation(nodes)
-    .force("link", d3.forceLink(links).distance(8).strength(1))
-    .force("collide", d3.forceCollide().radius(8))
+    .force("link", d3.forceLink(links).distance(10).strength(2))
+    .force("collide", d3.forceCollide().radius(20).strength(0.1))
     .force("x", d3.forceX((node) => (node as any).p[0]).strength(1))
     .force("y", d3.forceY((node) => (node as any).p[1]).strength(1));
 
@@ -147,10 +147,12 @@ export class Map extends React.Component<Props, State> {
       objects.map((obj) => [obj.x, obj.y]),
       objects
         .map(({ key, hyperlanes }) =>
-          hyperlanes.map<[number, number]>(({ to }) => [
-            objects.findIndex((x) => x.key === key),
-            objects.findIndex((x) => x.key === to),
-          ])
+          hyperlanes
+            .filter(({ to }) => key < to)
+            .map<[number, number]>(({ to }) => [
+              objects.findIndex((x) => x.key === key),
+              objects.findIndex((x) => x.key === to),
+            ])
         )
         .reduce((a, b) => a.concat(b))
     );
