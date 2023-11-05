@@ -52,8 +52,8 @@ function forceSimulation(points: Point[], edges: [number, number][]): Point[] {
 
   const simulation = d3
     .forceSimulation(nodes)
-    .force("link", d3.forceLink(links).distance(10).strength(2))
-    .force("collide", d3.forceCollide().radius(20).strength(0.1))
+    .force("link", d3.forceLink(links).distance(10).strength(1.5))
+    .force("collide", d3.forceCollide().radius(7).strength(1))
     .force("x", d3.forceX((node) => (node as any).p[0]).strength(1))
     .force("y", d3.forceY((node) => (node as any).p[1]).strength(1));
 
@@ -187,9 +187,25 @@ export class Map extends React.Component<Props, State> {
         .reduce((a, b) => a.concat(b))
     );
 
+    const voronoi = d3.Delaunay.from(points).voronoi([
+      -1000, -1000, 1000, 1000,
+    ]);
+
+    const nodes = objects.map((object, index) => {
+      const point = points[index];
+      const centroid = d3.polygonCentroid(
+        intersection(circle(point, 20), voronoi.cellPolygon(index))
+      );
+
+      return {
+        object,
+        point: centroid,
+      };
+    });
+
     this.setState({
       controllers: getControllers(model),
-      nodes: objects.map((object, index) => ({ object, point: points[index] })),
+      nodes,
     });
   }
 
@@ -217,17 +233,25 @@ export class Map extends React.Component<Props, State> {
     }));
 
     const getPolygon = (() => {
-      const delaunay = d3.Delaunay.from(scaledNodes.map(({ point }) => point));
-      const voronoi = delaunay.voronoi([-width, -height, width, height]);
+      const voronoi = d3.Delaunay.from(
+        scaledNodes.map(({ point }) => point)
+      ).voronoi([-width, -height, width, height]);
 
       return (node: Node): Point[] => {
         const index = scaledNodes.indexOf(node);
         return intersection(
-          circle(node.point, scale * 20),
+          circle(node.point, scale * 15),
           voronoi.cellPolygon(index)
         );
       };
     })();
+
+    const scaledNodeEdges: { from: Node; to: Node }[] = edges
+      .map(({ from, to }) => ({
+        from: scaledNodes.find((n) => n.object.key == from),
+        to: scaledNodes.find((n) => n.object.key == to),
+      }))
+      .filter(({ from, to }) => from && to) as any;
 
     return (
       <svg
@@ -243,6 +267,51 @@ export class Map extends React.Component<Props, State> {
             points={polygonPoints(getPolygon(node))}
           />
         ))}
+
+        {/* GRAY HYPERLANE BACKGROUNDS */}
+        {scaledNodeEdges.map(({ from, to }, index) => {
+          const pf = from.point;
+          const pt = to.point;
+
+          return (
+            <line
+              key={`${from}-${to}-${index}`}
+              x1={pf[0]}
+              y1={pf[1]}
+              x2={pt[0]}
+              y2={pt[1]}
+              stroke="#e2e8f0"
+              strokeWidth={5 * scale}
+            />
+          );
+        })}
+
+        {/* COLORED HYPERLANE BACKGROUNDS */}
+        {scaledNodeEdges.map(({ from, to }, index) => {
+          const pf = from.point;
+          const pt = to.point;
+
+          const cf = controllers[from.object.key] || [];
+          const ct = controllers[to.object.key] || [];
+
+          let color = "#e2e8f0";
+          if (cf.length === 1 && ct.length === 1 && cf[0].key === ct[0].key) {
+            color = mapColor(cf[0].color);
+            return (
+              <line
+                key={`${from}-${to}-${index}`}
+                x1={pf[0]}
+                y1={pf[1]}
+                x2={pt[0]}
+                y2={pt[1]}
+                stroke={color}
+                strokeWidth={4 * scale}
+              />
+            );
+          } else {
+            return null;
+          }
+        })}
 
         {/* COLORED CELLS */}
         {scaledNodes.map((node, i) => {
@@ -263,7 +332,7 @@ export class Map extends React.Component<Props, State> {
           return (
             <polygon
               key={i}
-              strokeWidth={1 * scale}
+              strokeWidth={0.5 * scale}
               stroke="#e2e8f0"
               fill={fill}
               points={polygonPoints(getPolygon(node))}
@@ -288,8 +357,8 @@ export class Map extends React.Component<Props, State> {
               x2={pt[0]}
               y2={pt[1]}
               stroke="#0f172a"
-              strokeWidth={1 * scale}
-              opacity={0.25}
+              strokeWidth={0.5 * scale}
+              strokeOpacity={0.5}
             />
           );
         })}
