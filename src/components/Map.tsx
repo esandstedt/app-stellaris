@@ -77,14 +77,14 @@ function getControllers(model: Model): { [key: string]: Country[] } {
     )
     .forEach((country) => {
       country.controlledPlanets
-        .map((x) => model.planets.find((y) => y.key === x)?.galacticObject)
+        .map((x) => x.galacticObject)
         .filter(onlyUnique)
-        .forEach((key) => {
-          if (key) {
-            if (result[key]) {
-              result[key].push(country);
+        .forEach((obj) => {
+          if (obj.key) {
+            if (result[obj.key]) {
+              result[obj.key].push(country);
             } else {
-              result[key] = [country];
+              result[obj.key] = [country];
             }
           }
         });
@@ -246,6 +246,12 @@ export class Map extends React.Component<Props, State> {
       };
     })();
 
+    var maxPopCount = this.props.model.galacticObjects
+      .map((obj) =>
+        obj.planets.map((p) => p.popCount).reduce((a, b) => a + b, 0)
+      )
+      .reduce((a, b) => Math.max(a, b), 0);
+
     const scaledNodeEdges: { from: Node; to: Node }[] = edges
       .map(({ from, to }) => ({
         from: scaledNodes.find((n) => n.object.key == from),
@@ -358,21 +364,29 @@ export class Map extends React.Component<Props, State> {
               y2={pt[1]}
               stroke="#0f172a"
               strokeWidth={0.5 * scale}
-              strokeOpacity={0.5}
+              strokeOpacity={0.75}
             />
           );
         })}
 
         {/* SYSTEM POINTS */}
-        {scaledNodes.map(({ object, point }) => (
-          <circle
-            key={object.key}
-            cx={point[0]}
-            cy={point[1]}
-            r={2 * scale}
-            fill="#0f172a"
-          />
-        ))}
+        {scaledNodes.map(({ object, point }, index) => {
+          const popCount = object.planets
+            .map((x) => x.popCount)
+            .reduce((a, b) => a + b, 0);
+
+          const radius = popCount === 0 ? 1 : (4 * popCount) / maxPopCount + 2;
+
+          return (
+            <circle
+              key={object.key}
+              cx={point[0]}
+              cy={point[1]}
+              r={radius * scale}
+              fill="#0f172a"
+            />
+          );
+        })}
       </svg>
     );
   }
