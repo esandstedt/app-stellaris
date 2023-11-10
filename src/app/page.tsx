@@ -4,11 +4,9 @@ import React, { useState } from "react";
 import { ModelLoader } from "@/components/ModelLoader";
 import { Model } from "@/model/Model";
 import { Map } from "@/components/Map";
-import { useWindowSize } from "@react-hook/window-size";
 
 export default function Home() {
   const [model, setModel] = useState<Model | null>(null);
-  const [width, height] = useWindowSize();
   if (model === null) {
     return (
       <div className="container mx-auto flex flex-col">
@@ -21,6 +19,6 @@ export default function Home() {
       </div>
     );
   } else {
-    return <Map model={model} width={width} height={height} />;
+    return <Map model={model} />;
   }
 }
