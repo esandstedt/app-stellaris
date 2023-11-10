@@ -32,7 +32,7 @@ export const ModelLoader: React.FC<Props> = (props) => {
   };
 
   return (
-    <div className="p-4 border border-gray-400 rounded">
+    <div className="p-4 border border-slate-400 rounded">
       <input type="file" multiple={false} onChange={onInputChange} />
       {error && (
         <div className="text-red-500">Uh-oh, something went wrong!</div>

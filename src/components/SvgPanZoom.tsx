@@ -37,17 +37,20 @@ export const SvgPanZoom: React.FC<Props> = (props) => {
       return;
     }
 
+    var padding = 0.05;
+    var scale = 1 - 2 * padding;
+
     var zoom = Math.min(
-      0.95 * (value.viewerWidth / value.SVGWidth),
-      0.95 * (value.viewerHeight / value.SVGHeight)
+      scale * (value.viewerWidth / value.SVGWidth),
+      scale * (value.viewerHeight / value.SVGHeight)
     );
 
     setValue(
       Object.assign({}, fitToViewer(value), {
         a: zoom,
         d: zoom,
-        e: value.viewerWidth / 2,
-        f: value.viewerHeight / 2,
+        e: (value.viewerWidth - zoom * value.SVGWidth) / 2,
+        f: padding * value.viewerHeight,
       })
     );
 
@@ -65,8 +68,11 @@ export const SvgPanZoom: React.FC<Props> = (props) => {
       onChangeValue={setValue}
       toolbarProps={{
         position: "none",
+        SVGAlignX: "center",
+        SVGAlignY: "center",
       }}
       miniatureProps={{ position: "none", background: "", height: 0, width: 0 }}
+      background="white"
     >
       {props.svg}
     </ReactSVGPanZoom>

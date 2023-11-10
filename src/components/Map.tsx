@@ -1,7 +1,9 @@
-import React from "react";
+import React, { createRef } from "react";
 import * as d3 from "d3";
 import { Country, GalacticObject, Model } from "@/model/Model";
 import { SvgPanZoom } from "./SvgPanZoom";
+import { saveSvgAsPng } from "save-svg-as-png";
+import { Button } from "./Button";
 
 interface Node {
   object: GalacticObject;
@@ -12,8 +14,8 @@ function onlyUnique<T>(value: T, index: number, array: T[]) {
   return array.indexOf(value) === index;
 }
 
-const SVG_WIDTH = 2000;
-const SVG_HEIGHT = 2000;
+const SVG_WIDTH = 4000;
+const SVG_HEIGHT = 4000;
 
 const COLORS: { [key: string]: string } = {
   black: "#404040",
@@ -154,6 +156,7 @@ type Point = [number, number];
 
 interface Props {
   model: Model;
+  onClose: () => void;
 }
 
 interface State {
@@ -162,6 +165,8 @@ interface State {
 }
 
 export class Map extends React.Component<Props, State> {
+  private svgRef = createRef<SVGSVGElement>();
+
   constructor(props: Props) {
     super(props);
 
@@ -211,7 +216,7 @@ export class Map extends React.Component<Props, State> {
     });
   }
 
-  render() {
+  private renderSvgContents() {
     const { controllers, nodes } = this.state;
 
     const edges = nodes
@@ -230,7 +235,10 @@ export class Map extends React.Component<Props, State> {
 
     const scaledNodes = nodes.map<Node>(({ object, point }) => ({
       object,
-      point: [-scale * point[0], scale * point[1]],
+      point: [
+        -scale * point[0] + SVG_WIDTH / 2,
+        scale * point[1] + SVG_HEIGHT / 2,
+      ],
     }));
 
     const getPolygon = (() => {
@@ -261,146 +269,170 @@ export class Map extends React.Component<Props, State> {
       .filter(({ from, to }) => from && to) as any;
 
     return (
-      <SvgPanZoom
-        svg={
-          <svg
-            width={SVG_WIDTH}
-            height={SVG_HEIGHT}
-            viewBox={`${-SVG_WIDTH / 2} ${
-              -SVG_HEIGHT / 2
-            } ${SVG_WIDTH} ${SVG_HEIGHT}`}
-          >
-            {/* GRAY CELLS */}
-            {scaledNodes.map((node, i) => (
-              <polygon
-                key={i}
-                fill="#e2e8f0"
-                points={polygonPoints(getPolygon(node))}
+      <>
+        {/* BACKGROUND */}
+        <rect width={SVG_WIDTH} height={SVG_HEIGHT} fill="white" />
+
+        {/* GRAY CELLS */}
+        {scaledNodes.map((node, i) => (
+          <polygon
+            key={i}
+            fill="#e2e8f0"
+            points={polygonPoints(getPolygon(node))}
+          />
+        ))}
+
+        {/* GRAY HYPERLANE BACKGROUNDS */}
+        {scaledNodeEdges.map(({ from, to }, index) => {
+          const pf = from.point;
+          const pt = to.point;
+
+          return (
+            <line
+              key={`${from}-${to}-${index}`}
+              x1={pf[0]}
+              y1={pf[1]}
+              x2={pt[0]}
+              y2={pt[1]}
+              stroke="#e2e8f0"
+              strokeWidth={5 * scale}
+            />
+          );
+        })}
+
+        {/* COLORED HYPERLANE BACKGROUNDS */}
+        {scaledNodeEdges.map(({ from, to }, index) => {
+          const pf = from.point;
+          const pt = to.point;
+
+          const cf = controllers[from.object.key] || [];
+          const ct = controllers[to.object.key] || [];
+
+          let color = "#e2e8f0";
+          if (cf.length === 1 && ct.length === 1 && cf[0].key === ct[0].key) {
+            color = mapColor(cf[0].color);
+            return (
+              <line
+                key={`${from}-${to}-${index}`}
+                x1={pf[0]}
+                y1={pf[1]}
+                x2={pt[0]}
+                y2={pt[1]}
+                stroke={color}
+                strokeWidth={4 * scale}
               />
-            ))}
+            );
+          } else {
+            return null;
+          }
+        })}
 
-            {/* GRAY HYPERLANE BACKGROUNDS */}
-            {scaledNodeEdges.map(({ from, to }, index) => {
-              const pf = from.point;
-              const pt = to.point;
+        {/* COLORED CELLS */}
+        {scaledNodes.map((node, i) => {
+          const countries = controllers[node.object.key] || [];
 
-              return (
-                <line
-                  key={`${from}-${to}-${index}`}
-                  x1={pf[0]}
-                  y1={pf[1]}
-                  x2={pt[0]}
-                  y2={pt[1]}
-                  stroke="#e2e8f0"
-                  strokeWidth={5 * scale}
-                />
-              );
-            })}
+          if (countries.length === 0) {
+            return null;
+          }
 
-            {/* COLORED HYPERLANE BACKGROUNDS */}
-            {scaledNodeEdges.map(({ from, to }, index) => {
-              const pf = from.point;
-              const pt = to.point;
+          let fill = "#334155";
+          if (countries.length === 1) {
+            const country = countries[0];
+            if (country) {
+              fill = mapColor(country.color);
+            }
+          }
 
-              const cf = controllers[from.object.key] || [];
-              const ct = controllers[to.object.key] || [];
+          return (
+            <polygon
+              key={i}
+              strokeWidth={0.5 * scale}
+              stroke="#e2e8f0"
+              fill={fill}
+              points={polygonPoints(getPolygon(node))}
+            />
+          );
+        })}
 
-              let color = "#e2e8f0";
-              if (
-                cf.length === 1 &&
-                ct.length === 1 &&
-                cf[0].key === ct[0].key
-              ) {
-                color = mapColor(cf[0].color);
-                return (
-                  <line
-                    key={`${from}-${to}-${index}`}
-                    x1={pf[0]}
-                    y1={pf[1]}
-                    x2={pt[0]}
-                    y2={pt[1]}
-                    stroke={color}
-                    strokeWidth={4 * scale}
-                  />
-                );
-              } else {
-                return null;
-              }
-            })}
+        {/* HYPERLANES */}
+        {edges.map(({ from, to }, index) => {
+          const pf = scaledNodes.find((n) => n.object.key == from)?.point;
+          const pt = scaledNodes.find((n) => n.object.key == to)?.point;
 
-            {/* COLORED CELLS */}
-            {scaledNodes.map((node, i) => {
-              const countries = controllers[node.object.key] || [];
+          if (!pf || !pt) {
+            return null;
+          }
 
-              if (countries.length === 0) {
-                return null;
-              }
+          return (
+            <line
+              key={`${from}-${to}-${index}`}
+              x1={pf[0]}
+              y1={pf[1]}
+              x2={pt[0]}
+              y2={pt[1]}
+              stroke="#0f172a"
+              strokeWidth={0.5 * scale}
+              strokeOpacity={0.75}
+            />
+          );
+        })}
 
-              let fill = "#334155";
-              if (countries.length === 1) {
-                const country = countries[0];
-                if (country) {
-                  fill = mapColor(country.color);
-                }
-              }
+        {/* SYSTEM POINTS */}
+        {scaledNodes.map(({ object, point }, index) => {
+          const popCount = object.planets
+            .map((x) => x.popCount)
+            .reduce((a, b) => a + b, 0);
 
-              return (
-                <polygon
-                  key={i}
-                  strokeWidth={0.5 * scale}
-                  stroke="#e2e8f0"
-                  fill={fill}
-                  points={polygonPoints(getPolygon(node))}
-                />
-              );
-            })}
+          const radius = popCount === 0 ? 1 : (4 * popCount) / maxPopCount + 2;
 
-            {/* HYPERLANES */}
-            {edges.map(({ from, to }, index) => {
-              const pf = scaledNodes.find((n) => n.object.key == from)?.point;
-              const pt = scaledNodes.find((n) => n.object.key == to)?.point;
-
-              if (!pf || !pt) {
-                return null;
-              }
-
-              return (
-                <line
-                  key={`${from}-${to}-${index}`}
-                  x1={pf[0]}
-                  y1={pf[1]}
-                  x2={pt[0]}
-                  y2={pt[1]}
-                  stroke="#0f172a"
-                  strokeWidth={0.5 * scale}
-                  strokeOpacity={0.75}
-                />
-              );
-            })}
-
-            {/* SYSTEM POINTS */}
-            {scaledNodes.map(({ object, point }, index) => {
-              const popCount = object.planets
-                .map((x) => x.popCount)
-                .reduce((a, b) => a + b, 0);
-
-              const radius =
-                popCount === 0 ? 1 : (4 * popCount) / maxPopCount + 2;
-
-              return (
-                <circle
-                  key={object.key}
-                  cx={point[0]}
-                  cy={point[1]}
-                  r={radius * scale}
-                  fill="#0f172a"
-                />
-              );
-            })}
-          </svg>
-        }
-      />
+          return (
+            <circle
+              key={object.key}
+              cx={point[0]}
+              cy={point[1]}
+              r={radius * scale}
+              fill="#0f172a"
+            />
+          );
+        })}
+      </>
     );
+  }
+
+  private renderSvg() {
+    return (
+      <svg
+        ref={this.svgRef}
+        width={SVG_WIDTH}
+        height={SVG_HEIGHT}
+        viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
+      >
+        {this.renderSvgContents()}
+      </svg>
+    );
+  }
+
+  public render() {
+    const svg = this.renderSvg();
+    return (
+      <>
+        <div className="fixed top-0 mt-4 right-0 mr-4 z-10 flex gap-2">
+          <Button onClick={() => this.download()} icon="download" />
+          <Button onClick={() => this.props.onClose()} icon="close" />
+        </div>
+        <SvgPanZoom svg={svg} />
+        <div className="hidden">{svg}</div>
+      </>
+    );
+  }
+
+  private download() {
+    const element = this.svgRef.current;
+    if (element) {
+      const { name, date } = this.props.model;
+      const fileName = `${name} ${date}.png`.replace(/\s/g, "_");
+      saveSvgAsPng(element, fileName);
+    }
   }
 }
 

@@ -19,6 +19,6 @@ export default function Home() {
       </div>
     );
   } else {
-    return <Map model={model} />;
+    return <Map model={model} onClose={() => setModel(null)} />;
   }
 }

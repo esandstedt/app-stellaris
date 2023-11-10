@@ -1,9 +1,14 @@
 export class Model {
+  public name: string;
+  public date: string;
   public galacticObjects: GalacticObject[] = [];
   public countries: Country[] = [];
   public planets: Planet[] = [];
   constructor(public document: any) {
     console.log(document);
+
+    this.name = document.name;
+    this.date = document.date;
 
     for (let key in document.galactic_object) {
       const value = document.galactic_object[key];
