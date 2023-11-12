@@ -29,6 +29,7 @@ const COLORS: { [key: string]: string } = {
   dark_purple: "#7e22ce",
   dark_red: "#b91c1c",
   dark_teal: "#0f766e",
+  frog_green: "#00a693",
   indigo: "#6366f1",
   green: "#22c55e",
   grey: "#a3a3a3",
